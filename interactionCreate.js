@@ -25,7 +25,7 @@ module.exports = {
 
         if (interaction.isButton()) {
 
-            /* ❌ CLOSE */
+            /* CLOSE PANEL */
             if (customId === "close_panel") {
                 return interaction.update({
                     content: "❌ تم إغلاق اللوحة",
@@ -34,10 +34,7 @@ module.exports = {
                 });
             }
 
-            /* ===========================
-               BROADCAST MENU
-            =========================== */
-
+            /* BROADCAST MENU */
             if (customId === "broadcast") {
 
                 if (!member.permissions.has(PermissionsBitField.Flags.Administrator)) {
@@ -46,21 +43,24 @@ module.exports = {
 
                 const embed = new EmbedBuilder()
                     .setTitle("📢 Broadcast System")
-                    .setColor(config.embedColor || 0x5865F2)
-                    .setDescription("اختار النوع");
+                    .setColor(config.embedColor || 0x5865F2);
 
                 const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId("bc_dm").setLabel("📨 DM").setStyle(ButtonStyle.Primary),
-                    new ButtonBuilder().setCustomId("bc_channel").setLabel("📢 Channel").setStyle(ButtonStyle.Success)
+                    new ButtonBuilder()
+                        .setCustomId("bc_dm")
+                        .setLabel("📨 DM")
+                        .setStyle(ButtonStyle.Primary),
+
+                    new ButtonBuilder()
+                        .setCustomId("bc_channel")
+                        .setLabel("📢 Channel")
+                        .setStyle(ButtonStyle.Success)
                 );
 
                 return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
             }
 
-            /* ===========================
-               MODERATION PANEL
-            =========================== */
-
+            /* MODERATION PANEL */
             if (customId === "moderation") {
 
                 if (!member.permissions.has(PermissionsBitField.Flags.Administrator)) {
@@ -81,10 +81,7 @@ module.exports = {
                 return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
             }
 
-            /* ===========================
-               STATISTICS
-            =========================== */
-
+            /* STATS */
             if (customId === "statistics") {
 
                 const embed = new EmbedBuilder()
@@ -99,10 +96,7 @@ module.exports = {
                 return interaction.reply({ embeds: [embed], ephemeral: true });
             }
 
-            /* ===========================
-               BROADCAST MODALS
-            =========================== */
-
+            /* BROADCAST MODALS */
             if (customId === "bc_dm" || customId === "bc_channel") {
 
                 return interaction.showModal({
@@ -121,17 +115,12 @@ module.exports = {
                 });
             }
 
-            /* ===========================
-               MODERATION ACTIONS
-            =========================== */
-
+            /* MODERATION MODALS */
             if (["kick_user", "ban_user", "timeout_user"].includes(customId)) {
 
-                const modalId = customId.replace("_user", "_modal");
-
                 return interaction.showModal({
-                    title: customId.toUpperCase(),
-                    custom_id: modalId,
+                    title: "User ID",
+                    custom_id: customId.replace("_user", "_modal"),
                     components: [{
                         type: 1,
                         components: [{
@@ -150,10 +139,10 @@ module.exports = {
                 await interaction.channel.bulkDelete(50).catch(() => {});
 
                 if (logChannel) {
-                    logChannel.send(`🗑 CLEAR by <@${interaction.user.id}>`).catch(() => {});
+                    logChannel.send(`🗑 Clear by <@${interaction.user.id}>`).catch(() => {});
                 }
 
-                return interaction.reply({ content: "🗑 تم الحذف", ephemeral: true });
+                return interaction.reply({ content: "🗑 Done", ephemeral: true });
             }
         }
 
@@ -165,8 +154,7 @@ module.exports = {
 
             const guild = interaction.guild;
 
-            /* ================= DM BROADCAST ================= */
-
+            /* DM BROADCAST */
             if (interaction.customId === "bc_dm_modal") {
 
                 const message = interaction.fields.getTextInputValue("message");
@@ -199,8 +187,7 @@ module.exports = {
                 });
             }
 
-            /* ================= CHANNEL BROADCAST ================= */
-
+            /* CHANNEL BROADCAST */
             if (interaction.customId === "bc_channel_modal") {
 
                 const message = interaction.fields.getTextInputValue("message");
@@ -209,14 +196,14 @@ module.exports = {
 
                 if (logChannel) {
                     logChannel.send(
-                        `📢 CHANNEL BROADCAST\n👤 <@${interaction.user.id}>\n<#${interaction.channel.id}>`
+                        `📢 CHANNEL BROADCAST\n👤 <@${interaction.user.id}>`
                     ).catch(() => {});
                 }
 
                 return interaction.reply({ content: "Sent", ephemeral: true });
             }
 
-            /* ================= MODERATION ================= */
+            /* MODERATION */
 
             const userId = interaction.fields.getTextInputValue("user_id");
             const target = await guild.members.fetch(userId).catch(() => null);
