@@ -1,4 +1,3 @@
-const fs = require("fs");
 const express = require("express");
 const {
   Client,
@@ -19,12 +18,6 @@ const client = new Client({
     GatewayIntentBits.GuildMembers
   ]
 });
-
-/* ================= DATA ================= */
-let guilds = {};
-if (fs.existsSync("./guilds.json")) {
-  guilds = JSON.parse(fs.readFileSync("./guilds.json", "utf8"));
-}
 
 /* ================= READY ================= */
 client.once("ready", () => {
@@ -92,3 +85,28 @@ app.post("/api/command", checkAuth, async (req, res) => {
     if (action === "kick") await member.kick();
 
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ================= SIMPLE PANEL COMMAND ================= */
+client.on("messageCreate", async (message) => {
+  if (!message.guild || message.author.bot) return;
+
+  if (message.content === "!panel") {
+    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+
+    message.reply("⚙ Bot Panel is running");
+  }
+});
+
+/* ================= START SERVER ================= */
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("🌐 API running on port", PORT);
+});
+
+/* ================= LOGIN BOT ================= */
+client.login(process.env.TOKEN);
