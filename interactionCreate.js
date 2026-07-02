@@ -6,7 +6,6 @@ const {
 } = require("discord.js");
 
 const config = require("./config.json");
-const broadcast = require("./broadcast");
 
 module.exports = {
     name: "interactionCreate",
@@ -16,7 +15,7 @@ module.exports = {
         const { customId, member, user } = interaction;
 
         /* ===========================
-           BUTTONS ONLY
+           BUTTONS
         =========================== */
 
         if (interaction.isButton()) {
@@ -32,7 +31,10 @@ module.exports = {
 
             }
 
-            // 📢 BROADCAST PANEL
+            /* ===========================
+               MAIN BROADCAST MENU
+            =========================== */
+
             if (customId === "broadcast") {
 
                 if (!member.permissions.has("Administrator")) {
@@ -68,7 +70,10 @@ module.exports = {
                 });
             }
 
-            // 👮 Moderation (مؤقت)
+            /* ===========================
+               MODERATION PANEL
+            =========================== */
+
             if (customId === "moderation") {
 
                 if (!member.permissions.has("Administrator")) {
@@ -78,39 +83,69 @@ module.exports = {
                     });
                 }
 
+                const embed = new EmbedBuilder()
+                    .setTitle("👮 Moderation Panel")
+                    .setColor(config.embedColor || 0x5865F2)
+                    .setDescription("اختر العملية:");
+
+                const row = new ActionRowBuilder().addComponents(
+
+                    new ButtonBuilder()
+                        .setCustomId("kick_user")
+                        .setLabel("👢 Kick")
+                        .setStyle(ButtonStyle.Danger),
+
+                    new ButtonBuilder()
+                        .setCustomId("ban_user")
+                        .setLabel("🔨 Ban")
+                        .setStyle(ButtonStyle.Danger),
+
+                    new ButtonBuilder()
+                        .setCustomId("timeout_user")
+                        .setLabel("⏱ Timeout")
+                        .setStyle(ButtonStyle.Secondary),
+
+                    new ButtonBuilder()
+                        .setCustomId("clear_chat")
+                        .setLabel("🗑 Clear")
+                        .setStyle(ButtonStyle.Primary)
+
+                );
+
                 return interaction.reply({
-                    content: "👮 قريباً سيتم إضافة الموديريشن",
+                    embeds: [embed],
+                    components: [row],
                     ephemeral: true
                 });
-
             }
 
-            // 🛡 Protection
+            /* ===========================
+               PROTECTION / SETTINGS
+            =========================== */
+
             if (customId === "protection") {
-
                 return interaction.reply({
-                    content: "🛡 قسم الحماية قريباً",
+                    content: "🛡 الحماية قريباً",
                     ephemeral: true
                 });
-
             }
 
-            // ⚙ Settings
             if (customId === "settings") {
-
                 return interaction.reply({
                     content: "⚙ الإعدادات قريباً",
                     ephemeral: true
                 });
-
             }
 
-            // 📊 Statistics
+            /* ===========================
+               STATISTICS
+            =========================== */
+
             if (customId === "statistics") {
 
                 const embed = new EmbedBuilder()
+                    .setTitle("📊 Bot Stats")
                     .setColor(config.embedColor || 0x5865F2)
-                    .setTitle("📊 Bot Statistics")
                     .addFields(
                         { name: "Servers", value: `${client.guilds.cache.size}`, inline: true },
                         { name: "Users", value: `${client.users.cache.size}`, inline: true },
@@ -121,10 +156,12 @@ module.exports = {
                     embeds: [embed],
                     ephemeral: true
                 });
-
             }
 
-            // 👑 Developer
+            /* ===========================
+               DEVELOPER PANEL
+            =========================== */
+
             if (customId === "developer") {
 
                 if (user.id !== config.ownerID) {
@@ -138,18 +175,17 @@ module.exports = {
                     content: "👑 Developer Panel قريباً",
                     ephemeral: true
                 });
-
             }
 
             /* ===========================
-               BROADCAST TYPE SELECT
+               BROADCAST OPTIONS
             =========================== */
 
-            if (customId === "bc_dm") {
+            if (customId === "bc_dm" || customId === "bc_channel") {
 
                 const modal = {
-                    title: "📨 DM Broadcast",
-                    custom_id: "bc_dm_modal",
+                    title: customId === "bc_dm" ? "📨 DM Broadcast" : "📢 Channel Broadcast",
+                    custom_id: customId === "bc_dm" ? "bc_dm_modal" : "bc_channel_modal",
                     components: [
                         {
                             type: 1,
@@ -159,32 +195,7 @@ module.exports = {
                                     custom_id: "message",
                                     label: "Message",
                                     style: 2,
-                                    placeholder: "اكتب الرسالة",
-                                    required: true
-                                }
-                            ]
-                        }
-                    ]
-                };
-
-                return interaction.showModal(modal);
-            }
-
-            if (customId === "bc_channel") {
-
-                const modal = {
-                    title: "📢 Channel Broadcast",
-                    custom_id: "bc_channel_modal",
-                    components: [
-                        {
-                            type: 1,
-                            components: [
-                                {
-                                    type: 4,
-                                    custom_id: "message",
-                                    label: "Message",
-                                    style: 2,
-                                    placeholder: "اكتب الرسالة",
+                                    placeholder: "اكتب الرسالة هنا",
                                     required: true
                                 }
                             ]
@@ -198,7 +209,7 @@ module.exports = {
         }
 
         /* ===========================
-           MODALS
+           MODALS (BROADCAST)
         =========================== */
 
         if (interaction.isModalSubmit()) {
@@ -232,7 +243,6 @@ module.exports = {
                     content: `✅ DM Broadcast Done\n📨 ${success}\n❌ ${failed}`,
                     ephemeral: true
                 });
-
             }
 
             // 📢 CHANNEL BROADCAST
@@ -244,7 +254,6 @@ module.exports = {
                     content: "✅ تم الإرسال في الروم",
                     ephemeral: true
                 });
-
             }
 
         }
