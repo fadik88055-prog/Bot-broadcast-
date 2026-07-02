@@ -3,6 +3,8 @@ const session = require("express-session");
 const passport = require("passport");
 const DiscordStrategy = require("passport-discord").Strategy;
 
+const fetch = (...args) => import("node-fetch").then(({default: fetch}) => fetch(...args));
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -11,7 +13,7 @@ const DEVELOPERS = [
   "1487469480069038171"
 ];
 
-/* ================= DISCORD CONFIG ================= */
+/* ================= DISCORD APP ================= */
 const config = {
   clientID: "1504088907283959911",
   clientSecret: "eSR8n1ADvE2mgaGGvnCFSwhWZQvlMpDg",
@@ -46,7 +48,7 @@ function checkDev(req, res, next) {
   if (!req.user) return res.redirect("/");
 
   if (!DEVELOPERS.includes(req.user.id)) {
-    return res.send("❌ هذا الداشبورد للمطورين فقط");
+    return res.send("❌ Developer only panel");
   }
 
   next();
@@ -70,13 +72,13 @@ app.get("/dashboard", (req, res) => {
   if (!req.user) return res.redirect("/");
 
   let html = `<h1>👋 Welcome ${req.user.username}</h1>`;
-  html += `<h2>🤖 Bot Servers</h2>`;
+  html += `<h2>🤖 Servers</h2>`;
 
   req.user.guilds.forEach(g => {
     html += `
-      <div style="border:1px solid #ccc;margin:10px;padding:10px">
+      <div style="border:1px solid #ccc;padding:10px;margin:10px">
         <h3>${g.name}</h3>
-        <a href="/guild/${g.id}">⚙ Open</a>
+        <a href="/guild/${g.id}">Open</a>
       </div>
     `;
   });
@@ -88,38 +90,95 @@ app.get("/dashboard", (req, res) => {
   res.send(html);
 });
 
-/* ================= GUILD PAGE ================= */
+/* ================= GUILD PANEL ================= */
 app.get("/guild/:id", (req, res) => {
   if (!req.user) return res.redirect("/");
 
   res.send(`
     <h1>⚙ Server Panel</h1>
+
     <p><b>Guild ID:</b> ${req.params.id}</p>
 
     <hr>
 
-    <h3>📢 Broadcast (Demo)</h3>
+    <h2>📢 Broadcast</h2>
     <form action="/broadcast/${req.params.id}">
-      <input name="msg" placeholder="Message" style="width:300px"/>
+      <input name="msg" placeholder="message" style="width:300px"/>
       <button>Send</button>
     </form>
 
     <hr>
 
-    <button onclick="alert('Soon')">Ban</button>
-    <button onclick="alert('Soon')">Mute</button>
+    <h2>🛠 Actions</h2>
+    <form action="/kick/${req.params.id}">
+      <input name="user" placeholder="User ID"/>
+      <button>Kick</button>
+    </form>
+
+    <form action="/ban/${req.params.id}">
+      <input name="user" placeholder="User ID"/>
+      <button>Ban</button>
+    </form>
   `);
 });
 
-/* ================= BROADCAST (DEMO) ================= */
-app.get("/broadcast/:id", (req, res) => {
+/* ================= BROADCAST ================= */
+app.get("/broadcast/:id", async (req, res) => {
   if (!req.user) return res.redirect("/");
 
-  res.send(`
-    <h3>📡 Broadcast Sent</h3>
-    <p>${req.query.msg}</p>
-    <p>⚠ يحتاج ربط مع البوت</p>
-  `);
+  await fetch("https://bot-broadcast-production.up.railway.app/api/broadcast", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": process.env.TOKEN
+    },
+    body: JSON.stringify({
+      guildId: req.params.id,
+      message: req.query.msg
+    })
+  });
+
+  res.send("📡 Broadcast sent");
+});
+
+/* ================= KICK ================= */
+app.get("/kick/:id", async (req, res) => {
+  if (!req.user) return res.redirect("/");
+
+  await fetch("https://bot-broadcast-production.up.railway.app/api/command", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": process.env.TOKEN
+    },
+    body: JSON.stringify({
+      guildId: req.params.id,
+      action: "kick",
+      userId: req.query.user
+    })
+  });
+
+  res.send("👢 User kicked");
+});
+
+/* ================= BAN ================= */
+app.get("/ban/:id", async (req, res) => {
+  if (!req.user) return res.redirect("/");
+
+  await fetch("https://bot-broadcast-production.up.railway.app/api/command", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": process.env.TOKEN
+    },
+    body: JSON.stringify({
+      guildId: req.params.id,
+      action: "ban",
+      userId: req.query.user
+    })
+  });
+
+  res.send("🔨 User banned");
 });
 
 /* ================= DEV PANEL ================= */
@@ -128,23 +187,13 @@ app.get("/dev", checkDev, (req, res) => {
     <h1>🔐 Developer Panel</h1>
 
     <form action="/dev/broadcast">
-      <input name="msg" placeholder="Broadcast message" style="width:300px"/>
+      <input name="msg" placeholder="Broadcast"/>
       <button>Send</button>
-    </form>
-
-    <form action="/dev/command">
-      <input name="cmd" placeholder="Bot command" style="width:300px"/>
-      <button>Run</button>
     </form>
   `);
 });
 
-/* ================= DEV ACTIONS ================= */
-app.get("/dev/broadcast", checkDev, (req, res) => {
-  console.log("DEV BROADCAST:", req.query.msg);
-  res.send("📡 Sent to bot (needs API connect)");
+/* ================= START ================= */
+app.listen(PORT, () => {
+  console.log("🌐 Dashboard running on port", PORT);
 });
-
-app.get("/dev/command", checkDev, (req, res) => {
-  console.log("DEV COMMAND:", req.query.cmd);
-  res.send("
