@@ -88,7 +88,6 @@ components: [row]
 
 }
 
-});
 if (message.content === "!bc") {
 
 if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator))
