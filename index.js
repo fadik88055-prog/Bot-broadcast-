@@ -1,112 +1,266 @@
-const express = require("express");
 const {
-  Client,
-  GatewayIntentBits,
-  PermissionsBitField,
-  ActivityType
+Client,
+GatewayIntentBits,
+Partials,
+Collection,
+ActivityType
 } = require("discord.js");
 
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+
+const config = require("./config.json");
+
 const app = express();
+
 app.use(express.json());
 
-/* ================= BOT ================= */
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers
-  ]
+
+intents: [
+
+GatewayIntentBits.Guilds,
+
+GatewayIntentBits.GuildMembers,
+
+GatewayIntentBits.GuildMessages,
+
+GatewayIntentBits.MessageContent,
+
+GatewayIntentBits.DirectMessages,
+
+GatewayIntentBits.GuildPresences
+
+],
+
+partials: [
+
+Partials.Channel,
+
+Partials.Message,
+
+Partials.User
+
+]
+
 });
 
-/* ================= READY ================= */
-client.once("ready", () => {
-  console.log(`🤖 Logged in as ${client.user.tag}`);
+client.commands = new Collection();
+client.cooldowns = new Collection();
+client.buttons = new Collection();
+client.selectMenus = new Collection();
+client.modals = new Collection();
 
-  client.user.setPresence({
-    activities: [{ name: "Dashboard Bot", type: ActivityType.Watching }],
-    status: "online"
-  });
-});
+client.config = config;
 
-/* ================= AUTH ================= */
-const TOKEN = process.env.TOKEN;
+client.uptime = Date.now();
+/* ================= EXPRESS ================= */
 
-function checkAuth(req, res, next) {
-  const auth = req.headers.authorization;
-  if (!auth || auth !== TOKEN) {
-    return res.status(403).send("No access");
-  }
-  next();
-}
-
-/* ================= BROADCAST API ================= */
-app.post("/api/broadcast", checkAuth, async (req, res) => {
-  const { guildId, message } = req.body;
-
-  const guild = client.guilds.cache.get(guildId);
-  if (!guild) return res.status(404).send("Guild not found");
-
-  let success = 0;
-  let failed = 0;
-
-  try {
-    const members = await guild.members.fetch();
-
-    for (const member of members.values()) {
-      if (member.user.bot) continue;
-
-      try {
-        await member.send(message);
-        success++;
-      } catch {
-        failed++;
-      }
-    }
-
-    res.json({ success, failed });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* ================= COMMAND API ================= */
-app.post("/api/command", checkAuth, async (req, res) => {
-  const { guildId, action, userId } = req.body;
-
-  const guild = client.guilds.cache.get(guildId);
-  if (!guild) return res.status(404).send("Guild not found");
-
-  const member = await guild.members.fetch(userId).catch(() => null);
-  if (!member) return res.status(404).send("User not found");
-
-  try {
-    if (action === "ban") await member.ban();
-    if (action === "kick") await member.kick();
-
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* ================= SIMPLE PANEL COMMAND ================= */
-client.on("messageCreate", async (message) => {
-  if (!message.guild || message.author.bot) return;
-
-  if (message.content === "!panel") {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
-
-    message.reply("⚙ Bot Panel is running");
-  }
-});
-
-/* ================= START SERVER ================= */
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log("🌐 API running on port", PORT);
+app.get("/", (req, res) => {
+
+res.send("Broadcast Dashboard Bot Online");
+
 });
 
-/* ================= LOGIN BOT ================= */
-client.login(process.env.TOKEN);
+app.get("/status", (req, res) => {
+
+res.json({
+
+status: "online",
+
+guilds: client.guilds.cache.size,
+
+users: client.users.cache.size,
+
+uptime: process.uptime()
+
+});
+
+});
+
+app.listen(PORT, () => {
+
+console.log(`🌐 Dashboard Running On ${PORT}`);
+
+});
+/* ================= LOAD COMMANDS ================= */
+
+const commandsPath = path.join(__dirname, "commands");
+
+if (fs.existsSync(commandsPath)) {
+
+    const commandFiles = fs
+        .readdirSync(commandsPath)
+        .filter(file => file.endsWith(".js"));
+
+    for (const file of commandFiles) {
+
+        const command = require(path.join(commandsPath, file));
+
+        if (!command.name) continue;
+
+        client.commands.set(command.name, command);
+
+        console.log(`✅ Command Loaded: ${command.name}`);
+
+    }
+
+}
+
+/* ================= LOAD EVENTS ================= */
+
+const eventsPath = path.join(__dirname, "events");
+
+if (fs.existsSync(eventsPath)) {
+
+    const eventFiles = fs
+        .readdirSync(eventsPath)
+        .filter(file => file.endsWith(".js"));
+
+    for (const file of eventFiles) {
+
+        const event = require(path.join(eventsPath, file));
+
+        if (event.once) {
+
+            client.once(event.name, (...args) =>
+                event.execute(...args, client)
+            );
+
+        } else {
+
+            client.on(event.name, (...args) =>
+                event.execute(...args, client)
+            );
+
+        }
+
+        console.log(`📌 Event Loaded: ${event.name}`);
+
+    }
+
+}
+/* ===========================
+   CREATE REQUIRED FOLDERS
+=========================== */
+
+const folders = [
+    "./commands",
+    "./events",
+    "./handlers",
+    "./filters",
+    "./logs",
+    "./data",
+    "./utils"
+];
+
+for (const folder of folders) {
+
+    if (!fs.existsSync(folder)) {
+
+        fs.mkdirSync(folder, {
+            recursive: true
+        });
+
+        console.log(`📁 Created Folder: ${folder}`);
+
+    }
+
+}
+
+/* ===========================
+   CREATE DEFAULT DATA FILES
+=========================== */
+
+const files = [
+
+    "./data/settings.json",
+    "./data/warnings.json",
+    "./data/broadcast.json",
+    "./data/logs.json"
+
+];
+
+for (const file of files) {
+
+    if (!fs.existsSync(file)) {
+
+        fs.writeFileSync(file, JSON.stringify({}, null, 4));
+
+        console.log(`📄 Created File: ${file}`);
+
+    }
+
+}
+/* ===========================
+   READY
+=========================== */
+
+client.once("ready", () => {
+
+    console.clear();
+
+    console.log("======================================");
+    console.log(`🤖 Logged In : ${client.user.tag}`);
+    console.log(`🌍 Servers   : ${client.guilds.cache.size}`);
+    console.log(`👥 Users     : ${client.users.cache.size}`);
+    console.log("======================================");
+
+    client.user.setPresence({
+
+        activities: [
+
+            {
+
+                name: config.status.text,
+
+                type: ActivityType.Watching
+
+            }
+
+        ],
+
+        status: "online"
+
+    });
+
+});
+/* ===========================
+   ERROR HANDLER
+=========================== */
+
+process.on("unhandledRejection", (reason) => {
+
+    console.log("========================================");
+    console.log("❌ Unhandled Rejection");
+    console.error(reason);
+    console.log("========================================");
+
+});
+
+process.on("uncaughtException", (error) => {
+
+    console.log("========================================");
+    console.log("❌ Uncaught Exception");
+    console.error(error);
+    console.log("========================================");
+
+});
+
+process.on("warning", (warning) => {
+
+    console.log("========================================");
+    console.log("⚠ Warning");
+    console.warn(warning);
+    console.log("========================================");
+
+});
+
+/* ===========================
+   LOGIN
+=========================== */
+
+client.login(process.env.TOKEN || config.TOKEN);
