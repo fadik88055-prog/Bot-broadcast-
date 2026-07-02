@@ -1,5 +1,6 @@
 {
   "TOKEN": "",
+
   "prefix": "!",
 
   "ownerID": "1487469480069038171",
@@ -9,6 +10,10 @@
   "timeoutMinutes": 10,
 
   "embedColor": "#5865F2",
+
+  "status": {
+    "text": "Broadcast Dashboard"
+  },
 
   "badWords": [
     "كلب",
@@ -43,9 +48,5 @@
 
   "logs": {
     "channel": ""
-  },
-
-  "broadcast": {
-    "dmDelay": 1000
   }
 }
