@@ -40,82 +40,6 @@ client.user.setPresence({
 activities: [
 {
 name: "!bc",
-type: ActivityType.Watching
-}
-],
-status: "online"
-});
-
-});
-if (message.content === "!bc") {
-
-if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator))
-return message.reply("❌ تحتاج صلاحية Administrator.");
-
-const embed = new EmbedBuilder()
-.setColor("Blue")
-.setTitle("📢 لوحة البرودكاست")
-.setDescription("اختر نوع البرودكاست");
-
-if (config.image) {
-embed.setImage(config.image);
-}
-
-const row = new ActionRowBuilder()
-.addComponents(
-
-new ButtonBuilder()
-.setCustomId("bc_all")
-.setLabel("الجميع")
-.setStyle(ButtonStyle.Primary),
-
-new ButtonBuilder()
-.setCustomId("bc_online")
-.setLabel("الأونلاين")
-.setStyle(ButtonStyle.Success),
-
-new ButtonBuilder()
-.setCustomId("bc_offline")
-.setLabel("الأوفلاين")
-.setStyle(ButtonStyle.Secondary)
-
-);
-
-return message.reply({
-embeds: [embed],
-components: [row]
-});
-
-}
-
-if (message.content === "!bc") {
-
-if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator))
-return message.reply("❌ تحتاج صلاحية Administrator.");
-
-const embed = new EmbedBuilder()
-.setColor("Blue")
-.setTitle("📢 لوحة البرودكاست")
-.setDescription("اختر نوع البرودكاست");
-
-if (config.image) {
-embed.setImage(config.image);
-}
-
-const row = new ActionRowBuilder()
-.addComponents(
-
-new ButtonBuilder()
-.setCustomId("bc_all")
-.setLabel("الجميع")
-.setStyle(ButtonStyle.Primary),
-
-new ButtonBuilder()
-.setCustomId("bc_online")
-.setLabel("الأونلاين")
-.setStyle(ButtonStyle.Success),
-
-new ButtonBuilder()
 .setCustomId("bc_offline")
 .setLabel("الأوفلاين")
 .setStyle(ButtonStyle.Secondary)
@@ -268,3 +192,4 @@ embeds: [result]
 const token = process.env.TOKEN || config.TOKEN;
 
 client.login(token);
+
