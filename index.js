@@ -212,7 +212,24 @@ client.on("messageCreate", async (message) => {
     require("./antiSpam").execute(message, client);
 
 });
+const fs = require("fs");
 
+function logEvent(data) {
+
+    const logs = fs.existsSync("./logs.json")
+        ? JSON.parse(fs.readFileSync("./logs.json", "utf8"))
+        : {};
+
+    const id = Date.now().toString();
+
+    logs[id] = {
+        ...data,
+        time: new Date().toISOString()
+    };
+
+    fs.writeFileSync("./logs.json", JSON.stringify(logs, null, 4));
+}
+client.logEvent = logEvent;
 /* ===========================
    LOGIN
 =========================== */
