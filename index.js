@@ -41,11 +41,31 @@ client.once("ready", () => {
   });
 });
 
-/* ================= PANEL ================= */
+/* ================= MESSAGE SYSTEM ================= */
 client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
+  if (message.author.bot || !message.guild) return;
 
-  const cmd = message.content.split(" ")[0];
+  const content = message.content.trim();
+  const cmd = content.split(" ")[0].toLowerCase();
+
+  /* ================= FILTER ================= */
+  if (filterEnabled) {
+    const badWords = [
+      "كلب","حمار","خرا","زبالة",
+      "گواد","قواد","كحبه","منيوج",
+      "انيجك","انيچك","منيوجه","منيوچ",
+      "منيوچه","انيچج","انيجج","منيوك"
+    ];
+
+    const msg = content.toLowerCase();
+
+    if (badWords.some(w => msg.includes(w))) {
+      await message.delete().catch(() => {});
+      return message.reply("❌ ممنوع السب").then(m => {
+        setTimeout(() => m.delete().catch(() => {}), 3000);
+      });
+    }
+  }
 
   /* ================= PANEL ================= */
   if (cmd === "!panel") {
@@ -69,23 +89,19 @@ client.on("messageCreate", async (message) => {
     return message.reply({ embeds: [embed], components: [row] });
   }
 
-  /* ================= FILTER ================= */
-  if (filterEnabled) {
-    const badWords = [
-      "كلب","حمار","خرا","زبالة",
-      "گواد","قواد","كحبه","منيوج",
-      "انيجك","انيچك","منيوجه","منيوچ",
-      "منيوچه","انيچج","انيجج","منيوك"
-    ];
+  /* ================= SETLOG ================= */
+  if (cmd === "!setlog") {
+    const channel = message.mentions.channels.first();
+    if (!channel) return message.reply("❌ منشن روم");
 
-    const msg = message.content.toLowerCase();
+    guilds[message.guild.id] = {
+      ...guilds[message.guild.id],
+      logChannel: channel.id
+    };
 
-    if (badWords.some(w => msg.includes(w))) {
-      await message.delete().catch(() => {});
-      return message.reply("❌ ممنوع السب").then(m => {
-        setTimeout(() => m.delete().catch(() => {}), 3000);
-      });
-    }
+    fs.writeFileSync("./guilds.json", JSON.stringify(guilds, null, 2));
+
+    return message.reply("✅ تم تعيين اللوق");
   }
 });
 
@@ -93,59 +109,47 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
-  /* ================= HELP PANEL ================= */
   if (interaction.customId === "panel_help") {
-    const embed = new EmbedBuilder()
-      .setColor("Blue")
-      .setTitle("📜 الأوامر")
-      .setDescription(`
+    return interaction.reply({
+      ephemeral: true,
+      embeds: [
+        new EmbedBuilder()
+          .setColor("Blue")
+          .setTitle("📜 الأوامر")
+          .setDescription(`
 !panel → لوحة التحكم
-!bc → برودكاست (للرتب المسموحة)
 !setlog → تعيين اللوق
-      `);
-
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+البرودكاست من الرتبة فقط
+          `)
+      ]
+    });
   }
 
-  /* ================= FILTER TOGGLE ================= */
   if (interaction.customId === "filter_toggle") {
     filterEnabled = !filterEnabled;
+
     return interaction.reply({
       content: filterEnabled ? "🟢 الفلتر شغال" : "🔴 الفلتر مطفي",
       ephemeral: true
     });
   }
 
-  /* ================= STATS ================= */
   if (interaction.customId === "stats_show") {
-    const embed = new EmbedBuilder()
-      .setColor("Green")
-      .setTitle("📊 الإحصائيات")
-      .addFields(
-        { name: "السيرفرات", value: `${client.guilds.cache.size}`, inline: true },
-        { name: "الأعضاء", value: `${client.users.cache.size}`, inline: true }
-      );
-
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({
+      ephemeral: true,
+      embeds: [
+        new EmbedBuilder()
+          .setColor("Green")
+          .setTitle("📊 الإحصائيات")
+          .addFields(
+            { name: "السيرفرات", value: `${client.guilds.cache.size}`, inline: true },
+            { name: "الأعضاء", value: `${client.users.cache.size}`, inline: true }
+          )
+      ]
+    });
   }
 
-  /* ================= SET BC ROLE ================= */
-  if (interaction.customId === "set_bc_role") {
-    const modal = new ModalBuilder()
-      .setCustomId("bc_role_modal")
-      .setTitle("تحديد رتبة BC");
-
-    const input = new TextInputBuilder()
-      .setCustomId("role_id")
-      .setLabel("حط ID الرتبة")
-      .setStyle(TextInputStyle.Short);
-
-    modal.addComponents(new ActionRowBuilder().addComponents(input));
-
-    return interaction.showModal(modal);
-  }
-
-  /* ================= BAN ================= */
+  /* BAN */
   if (interaction.customId === "ban_user") {
     const modal = new ModalBuilder()
       .setCustomId("ban_modal")
@@ -157,15 +161,14 @@ client.on("interactionCreate", async (interaction) => {
       .setStyle(TextInputStyle.Short);
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
-
     return interaction.showModal(modal);
   }
 
-  /* ================= MUTE ================= */
+  /* MUTE */
   if (interaction.customId === "mute_user") {
     const modal = new ModalBuilder()
       .setCustomId("mute_modal")
-      .setTitle("كتم عضو");
+      .setTitle("كتم عضو (10 دقائق)");
 
     const input = new TextInputBuilder()
       .setCustomId("user_id")
@@ -173,7 +176,21 @@ client.on("interactionCreate", async (interaction) => {
       .setStyle(TextInputStyle.Short);
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
+    return interaction.showModal(modal);
+  }
 
+  /* BC ROLE */
+  if (interaction.customId === "set_bc_role") {
+    const modal = new ModalBuilder()
+      .setCustomId("bc_role_modal")
+      .setTitle("رتبة البرودكاست");
+
+    const input = new TextInputBuilder()
+      .setCustomId("role_id")
+      .setLabel("ID الرتبة")
+      .setStyle(TextInputStyle.Short);
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
     return interaction.showModal(modal);
   }
 });
@@ -182,7 +199,7 @@ client.on("interactionCreate", async (interaction) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isModalSubmit()) return;
 
-  /* ================= BC ROLE SAVE ================= */
+  /* BC ROLE */
   if (interaction.customId === "bc_role_modal") {
     const roleId = interaction.fields.getTextInputValue("role_id");
 
@@ -196,7 +213,7 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "✅ تم حفظ رتبة BC", ephemeral: true });
   }
 
-  /* ================= BAN ================= */
+  /* BAN */
   if (interaction.customId === "ban_modal") {
     const id = interaction.fields.getTextInputValue("user_id");
 
@@ -207,7 +224,7 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ content: "🔨 تم البان", ephemeral: true });
   }
 
-  /* ================= MUTE ================= */
+  /* MUTE */
   if (interaction.customId === "mute_modal") {
     const id = interaction.fields.getTextInputValue("user_id");
 
@@ -215,7 +232,7 @@ client.on("interactionCreate", async (interaction) => {
     if (!member) return interaction.reply({ content: "❌ ما لقيته", ephemeral: true });
 
     await member.timeout(10 * 60 * 1000);
-    return interaction.reply({ content: "🔇 تم الكتم", ephemeral: true });
+    return interaction.reply({ content: "🔇 تم الكتم 10 دقائق", ephemeral: true });
   }
 });
 
