@@ -86,63 +86,6 @@ app.listen(PORT, () => {
 console.log(`🌐 Dashboard Running On ${PORT}`);
 
 });
-/* ================= LOAD COMMANDS ================= */
-
-const commandsPath = path.join(__dirname, "commands");
-
-if (fs.existsSync(commandsPath)) {
-
-    const commandFiles = fs
-        .readdirSync(commandsPath)
-        .filter(file => file.endsWith(".js"));
-
-    for (const file of commandFiles) {
-
-        const command = require(path.join(commandsPath, file));
-
-        if (!command.name) continue;
-
-        client.commands.set(command.name, command);
-
-        console.log(`✅ Command Loaded: ${command.name}`);
-
-    }
-
-}
-
-/* ================= LOAD EVENTS ================= */
-
-const eventsPath = path.join(__dirname, "events");
-
-if (fs.existsSync(eventsPath)) {
-
-    const eventFiles = fs
-        .readdirSync(eventsPath)
-        .filter(file => file.endsWith(".js"));
-
-    for (const file of eventFiles) {
-
-        const event = require(path.join(eventsPath, file));
-
-        if (event.once) {
-
-            client.once(event.name, (...args) =>
-                event.execute(...args, client)
-            );
-
-        } else {
-
-            client.on(event.name, (...args) =>
-                event.execute(...args, client)
-            );
-
-        }
-
-        console.log(`📌 Event Loaded: ${event.name}`);
-
-    }
-
-}
 /* ===========================
    CREATE REQUIRED FOLDERS
 =========================== */
