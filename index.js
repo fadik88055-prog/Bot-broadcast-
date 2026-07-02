@@ -41,13 +41,12 @@ client.once("ready", () => {
   });
 });
 
-/* ================= PANEL COMMAND ================= */
+/* ================= PANEL ================= */
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
   const cmd = message.content.split(" ")[0];
 
-  /* PANEL */
   if (cmd === "!panel") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator))
       return message.reply("❌ تحتاج Admin");
@@ -55,7 +54,7 @@ client.on("messageCreate", async (message) => {
     const embed = new EmbedBuilder()
       .setColor("Gold")
       .setTitle("⚙️ لوحة التحكم")
-      .setDescription("إدارة البوت من هنا");
+      .setDescription("إدارة السيرفر والبوت");
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -69,8 +68,13 @@ client.on("messageCreate", async (message) => {
         .setStyle(ButtonStyle.Success),
 
       new ButtonBuilder()
-        .setCustomId("setlog_fast")
-        .setLabel("تعيين اللوق")
+        .setCustomId("ban_user")
+        .setLabel("بان عضو")
+        .setStyle(ButtonStyle.Danger),
+
+      new ButtonBuilder()
+        .setCustomId("mute_user")
+        .setLabel("كتم عضو")
         .setStyle(ButtonStyle.Secondary)
     );
 
@@ -96,7 +100,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  /* SETLOG COMMAND (قديمة) */
+  /* SETLOG */
   if (cmd === "!setlog") {
     const channel = message.mentions.channels.first();
     if (!channel) return message.reply("❌ منشن روم");
@@ -112,12 +116,11 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
-  /* TOGGLE FILTER */
+  /* FILTER */
   if (interaction.customId === "filter_toggle") {
     filterEnabled = !filterEnabled;
-
     return interaction.reply({
-      content: filterEnabled ? "🟢 تم تشغيل الفلتر" : "🔴 تم إيقاف الفلتر",
+      content: filterEnabled ? "🟢 الفلتر شغال" : "🔴 الفلتر مطفي",
       ephemeral: true
     });
   }
@@ -135,15 +138,31 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
-  /* FAST SETLOG */
-  if (interaction.customId === "setlog_fast") {
+  /* BAN MODAL */
+  if (interaction.customId === "ban_user") {
     const modal = new ModalBuilder()
-      .setCustomId("setlog_modal")
-      .setTitle("تعيين اللوق");
+      .setCustomId("ban_modal")
+      .setTitle("بان عضو");
 
     const input = new TextInputBuilder()
-      .setCustomId("log_channel")
-      .setLabel("اكتب ID الروم")
+      .setCustomId("user_id")
+      .setLabel("اكتب ID العضو")
+      .setStyle(TextInputStyle.Short);
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+    return interaction.showModal(modal);
+  }
+
+  /* MUTE MODAL */
+  if (interaction.customId === "mute_user") {
+    const modal = new ModalBuilder()
+      .setCustomId("mute_modal")
+      .setTitle("كتم عضو (10 دقائق)");
+
+    const input = new TextInputBuilder()
+      .setCustomId("user_id")
+      .setLabel("اكتب ID العضو")
       .setStyle(TextInputStyle.Short);
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -152,20 +171,49 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-/* ================= MODAL ================= */
+/* ================= MODALS ================= */
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isModalSubmit()) return;
 
-  if (interaction.customId === "setlog_modal") {
-    const id = interaction.fields.getTextInputValue("log_channel");
+  /* BAN */
+  if (interaction.customId === "ban_modal") {
+    const id = interaction.fields.getTextInputValue("user_id");
 
-    guilds[interaction.guild.id] = { logChannel: id };
-    fs.writeFileSync("./guilds.json", JSON.stringify(guilds, null, 2));
+    try {
+      const member = await interaction.guild.members.fetch(id);
+      await member.ban({ reason: "Banned from panel" });
 
-    return interaction.reply({
-      content: "✅ تم حفظ اللوق",
-      ephemeral: true
-    });
+      return interaction.reply({
+        content: "🔨 تم تبنيد العضو",
+        ephemeral: true
+      });
+    } catch {
+      return interaction.reply({
+        content: "❌ فشل البان",
+        ephemeral: true
+      });
+    }
+  }
+
+  /* MUTE */
+  if (interaction.customId === "mute_modal") {
+    const id = interaction.fields.getTextInputValue("user_id");
+
+    try {
+      const member = await interaction.guild.members.fetch(id);
+
+      await member.timeout(10 * 60 * 1000, "Muted from panel");
+
+      return interaction.reply({
+        content: "🔇 تم كتم العضو 10 دقائق",
+        ephemeral: true
+      });
+    } catch {
+      return interaction.reply({
+        content: "❌ فشل الكتم",
+        ephemeral: true
+      });
+    }
   }
 });
 
