@@ -203,6 +203,22 @@ process.on("warning", (warning) => {
 });
 
 /* ===========================
+   MESSAGE EVENTS
+=========================== */
+
+client.on("messageCreate", async (message) => {
+
+    require("./messageCreate").execute(message, client);
+    require("./antiSpam").execute(message, client);
+
+});
+
+/* ===========================
+   LOGIN
+=========================== */
+
+client.login(process.env.TOKEN || config.TOKEN);
+/* ===========================
    LOGIN
 =========================== */
 
