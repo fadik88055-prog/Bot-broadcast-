@@ -17,19 +17,44 @@ module.exports = {
 
         if (!guild) return;
 
+        const logChannel = guild.channels.cache.get(config.logChannelId);
+
         /* ===========================
-           BUTTON HANDLER
+           BUTTONS
         =========================== */
 
         if (interaction.isButton()) {
 
-            /* ❌ CLOSE PANEL */
+            /* ❌ CLOSE */
             if (customId === "close_panel") {
                 return interaction.update({
                     content: "❌ تم إغلاق اللوحة",
                     embeds: [],
                     components: []
                 });
+            }
+
+            /* ===========================
+               BROADCAST MENU
+            =========================== */
+
+            if (customId === "broadcast") {
+
+                if (!member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                    return interaction.reply({ content: "❌ ما عندك صلاحية", ephemeral: true });
+                }
+
+                const embed = new EmbedBuilder()
+                    .setTitle("📢 Broadcast System")
+                    .setColor(config.embedColor || 0x5865F2)
+                    .setDescription("اختار النوع");
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId("bc_dm").setLabel("📨 DM").setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder().setCustomId("bc_channel").setLabel("📢 Channel").setStyle(ButtonStyle.Success)
+                );
+
+                return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
             }
 
             /* ===========================
@@ -44,59 +69,16 @@ module.exports = {
 
                 const embed = new EmbedBuilder()
                     .setTitle("👮 Moderation Panel")
-                    .setColor(config.embedColor || 0x5865F2)
-                    .setDescription("اختر العملية");
+                    .setColor(config.embedColor || 0x5865F2);
 
                 const row = new ActionRowBuilder().addComponents(
-
                     new ButtonBuilder().setCustomId("kick_user").setLabel("👢 Kick").setStyle(ButtonStyle.Danger),
                     new ButtonBuilder().setCustomId("ban_user").setLabel("🔨 Ban").setStyle(ButtonStyle.Danger),
                     new ButtonBuilder().setCustomId("timeout_user").setLabel("⏱ Timeout").setStyle(ButtonStyle.Secondary),
                     new ButtonBuilder().setCustomId("clear_chat").setLabel("🗑 Clear").setStyle(ButtonStyle.Primary)
-
                 );
 
-                return interaction.reply({
-                    embeds: [embed],
-                    components: [row],
-                    ephemeral: true
-                });
-            }
-
-            /* ===========================
-               PROTECTION PANEL
-            =========================== */
-
-            if (customId === "protection") {
-
-                return interaction.reply({
-                    content: "🛡 Protection System جاهز (فلتر + سبام + منشن)",
-                    ephemeral: true
-                });
-            }
-
-            /* ===========================
-               SETTINGS PANEL
-            =========================== */
-
-            if (customId === "settings") {
-
-                return interaction.reply({
-                    content: "⚙ Settings Panel (قريباً توسعة كاملة)",
-                    ephemeral: true
-                });
-            }
-
-            /* ===========================
-               LOGS VIEW
-            =========================== */
-
-            if (customId === "logs") {
-
-                return interaction.reply({
-                    content: "📜 Logs System جاهز (راح نربطه بملف خارجي لاحقاً)",
-                    ephemeral: true
-                });
+                return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
             }
 
             /* ===========================
@@ -106,7 +88,7 @@ module.exports = {
             if (customId === "statistics") {
 
                 const embed = new EmbedBuilder()
-                    .setTitle("📊 Bot Stats")
+                    .setTitle("📊 Stats")
                     .setColor(config.embedColor || 0x5865F2)
                     .addFields(
                         { name: "Servers", value: `${client.guilds.cache.size}`, inline: true },
@@ -118,15 +100,38 @@ module.exports = {
             }
 
             /* ===========================
+               BROADCAST MODALS
+            =========================== */
+
+            if (customId === "bc_dm" || customId === "bc_channel") {
+
+                return interaction.showModal({
+                    title: customId === "bc_dm" ? "DM Broadcast" : "Channel Broadcast",
+                    custom_id: customId === "bc_dm" ? "bc_dm_modal" : "bc_channel_modal",
+                    components: [{
+                        type: 1,
+                        components: [{
+                            type: 4,
+                            custom_id: "message",
+                            label: "Message",
+                            style: 2,
+                            required: true
+                        }]
+                    }]
+                });
+            }
+
+            /* ===========================
                MODERATION ACTIONS
             =========================== */
 
-            // 👢 KICK
-            if (customId === "kick_user") {
+            if (["kick_user", "ban_user", "timeout_user"].includes(customId)) {
 
-                const modal = {
-                    title: "👢 Kick User",
-                    custom_id: "kick_modal",
+                const modalId = customId.replace("_user", "_modal");
+
+                return interaction.showModal({
+                    title: customId.toUpperCase(),
+                    custom_id: modalId,
                     components: [{
                         type: 1,
                         components: [{
@@ -137,128 +142,125 @@ module.exports = {
                             required: true
                         }]
                     }]
-                };
-client.logEvent({
-    type: "KICK",
-    user: userId,
-    moderator: interaction.user.id
-});
-                return interaction.showModal(modal);
-            }
-
-            // 🔨 BAN
-            if (customId === "ban_user") {
-
-                const modal = {
-                    title: "🔨 Ban User",
-                    custom_id: "ban_modal",
-                    components: [{
-                        type: 1,
-                        components: [{
-                            type: 4,
-                            custom_id: "user_id",
-                            label: "User ID",
-                            style: 1,
-                            required: true
-                        }]
-                    }]
-                };
-client.logEvent({
-    type: "BAN",
-    user: userId,
-    moderator: interaction.user.id
-});
-                return interaction.showModal(modal);
-            }
-
-            // ⏱ TIMEOUT
-            if (customId === "timeout_user") {
-
-                const modal = {
-                    title: "⏱ Timeout User",
-                    custom_id: "timeout_modal",
-                    components: [{
-                        type: 1,
-                        components: [{
-                            type: 4,
-                            custom_id: "user_id",
-                            label: "User ID",
-                            style: 1,
-                            required: true
-                        }]
-                    }]
-                };
-client.logEvent({
-    type: "TIMEOUT",
-    user: userId,
-    moderator: interaction.user.id
-});
-                return interaction.showModal(modal);
-            }
-
-            // 🗑 CLEAR
-            if (customId === "clear_chat") {
-
-                await interaction.channel.bulkDelete(50).catch(() => null);
-
-                return interaction.reply({
-                    content: "🗑 تم حذف آخر 50 رسالة",
-                    ephemeral: true
                 });
             }
+
+            if (customId === "clear_chat") {
+
+                await interaction.channel.bulkDelete(50).catch(() => {});
+
+                if (logChannel) {
+                    logChannel.send(`🗑 CLEAR by <@${interaction.user.id}>`).catch(() => {});
+                }
+
+                return interaction.reply({ content: "🗑 تم الحذف", ephemeral: true });
+            }
         }
-client.logEvent({
-    type: "CLEAR",
-    channel: interaction.channel.id,
-    moderator: interaction.user.id
-});
+
         /* ===========================
-           MODALS (MODERATION)
+           MODALS
         =========================== */
 
         if (interaction.isModalSubmit()) {
 
-            const userId = interaction.fields.getTextInputValue("user_id");
+            const guild = interaction.guild;
 
+            /* ================= DM BROADCAST ================= */
+
+            if (interaction.customId === "bc_dm_modal") {
+
+                const message = interaction.fields.getTextInputValue("message");
+
+                let success = 0;
+                let failed = 0;
+
+                const members = await guild.members.fetch();
+
+                for (const m of members.values()) {
+                    if (m.user.bot) continue;
+
+                    try {
+                        await m.send(`📢 ${message}`);
+                        success++;
+                    } catch {
+                        failed++;
+                    }
+                }
+
+                if (logChannel) {
+                    logChannel.send(
+                        `📢 DM BROADCAST\n👤 <@${interaction.user.id}>\n✅ ${success} ❌ ${failed}`
+                    ).catch(() => {});
+                }
+
+                return interaction.reply({
+                    content: `Done\n✅ ${success} ❌ ${failed}`,
+                    ephemeral: true
+                });
+            }
+
+            /* ================= CHANNEL BROADCAST ================= */
+
+            if (interaction.customId === "bc_channel_modal") {
+
+                const message = interaction.fields.getTextInputValue("message");
+
+                await interaction.channel.send(`📢 ${message}`);
+
+                if (logChannel) {
+                    logChannel.send(
+                        `📢 CHANNEL BROADCAST\n👤 <@${interaction.user.id}>\n<#${interaction.channel.id}>`
+                    ).catch(() => {});
+                }
+
+                return interaction.reply({ content: "Sent", ephemeral: true });
+            }
+
+            /* ================= MODERATION ================= */
+
+            const userId = interaction.fields.getTextInputValue("user_id");
             const target = await guild.members.fetch(userId).catch(() => null);
 
-            /* 👢 KICK */
+            /* KICK */
             if (interaction.customId === "kick_modal") {
 
-                if (!target) return interaction.reply({ content: "❌ المستخدم غير موجود", ephemeral: true });
+                if (!target) return interaction.reply({ content: "Not found", ephemeral: true });
 
-                await target.kick("Panel Kick");
+                await target.kick();
 
-                return interaction.reply({
-                    content: `👢 تم طرد <@${userId}>`,
-                    ephemeral: true
-                });
+                if (logChannel) {
+                    logChannel.send(`👢 KICK <@${userId}> by <@${interaction.user.id}>`).catch(() => {});
+                }
+
+                return interaction.reply({ content: "Kicked", ephemeral: true });
             }
 
-            /* 🔨 BAN */
+            /* BAN */
             if (interaction.customId === "ban_modal") {
 
-                if (!target) return interaction.reply({ content: "❌ المستخدم غير موجود", ephemeral: true });
+                if (!target) return interaction.reply({ content: "Not found", ephemeral: true });
 
-                await target.ban({ reason: "Panel Ban" });
+                await target.ban();
 
-                return interaction.reply({
-                    content: `🔨 تم حظر <@${userId}>`,
-                    ephemeral: true
-                });
+                if (logChannel) {
+                    logChannel.send(`🔨 BAN <@${userId}> by <@${interaction.user.id}>`).catch(() => {});
+                }
+
+                return interaction.reply({ content: "Banned", ephemeral: true });
             }
 
-            /* ⏱ TIMEOUT */
+            /* TIMEOUT */
             if (interaction.customId === "timeout_modal") {
 
-                if (!target) return interaction.reply({ content: "❌ المستخدم غير موجود", ephemeral: true });
+                if (!target) return interaction.reply({ content: "Not found", ephemeral: true });
 
-                await target.timeout(10 * 60 * 1000, "Panel Timeout");
+                await target.timeout(10 * 60 * 1000);
 
-                return interaction.reply({
-                    content: `⏱ تم كتم <@${userId}>`,
-                    ephemeral: true
-                });
+                if (logChannel) {
+                    logChannel.send(`⏱ TIMEOUT <@${userId}> by <@${interaction.user.id}>`).catch(() => {});
+                }
+
+                return interaction.reply({ content: "Timeout done", ephemeral: true });
             }
         }
     }
