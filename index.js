@@ -212,7 +212,6 @@ client.on("messageCreate", async (message) => {
     require("./antiSpam").execute(message, client);
 
 });
-const fs = require("fs");
 
 function logEvent(data) {
 
