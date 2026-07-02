@@ -138,7 +138,11 @@ module.exports = {
                         }]
                     }]
                 };
-
+client.logEvent({
+    type: "KICK",
+    user: userId,
+    moderator: interaction.user.id
+});
                 return interaction.showModal(modal);
             }
 
@@ -159,7 +163,11 @@ module.exports = {
                         }]
                     }]
                 };
-
+client.logEvent({
+    type: "BAN",
+    user: userId,
+    moderator: interaction.user.id
+});
                 return interaction.showModal(modal);
             }
 
@@ -180,7 +188,11 @@ module.exports = {
                         }]
                     }]
                 };
-
+client.logEvent({
+    type: "TIMEOUT",
+    user: userId,
+    moderator: interaction.user.id
+});
                 return interaction.showModal(modal);
             }
 
@@ -195,7 +207,11 @@ module.exports = {
                 });
             }
         }
-
+client.logEvent({
+    type: "CLEAR",
+    channel: interaction.channel.id,
+    moderator: interaction.user.id
+});
         /* ===========================
            MODALS (MODERATION)
         =========================== */
