@@ -47,6 +47,7 @@ client.on("messageCreate", async (message) => {
 
   const cmd = message.content.split(" ")[0];
 
+  /* ================= PANEL ================= */
   if (cmd === "!panel") {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator))
       return message.reply("❌ تحتاج Admin");
@@ -57,31 +58,18 @@ client.on("messageCreate", async (message) => {
       .setDescription("إدارة السيرفر والبوت");
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("filter_toggle")
-        .setLabel(filterEnabled ? "إيقاف الفلتر" : "تشغيل الفلتر")
-        .setStyle(ButtonStyle.Primary),
-
-      new ButtonBuilder()
-        .setCustomId("show_stats")
-        .setLabel("الإحصائيات")
-        .setStyle(ButtonStyle.Success),
-
-      new ButtonBuilder()
-        .setCustomId("ban_user")
-        .setLabel("بان عضو")
-        .setStyle(ButtonStyle.Danger),
-
-      new ButtonBuilder()
-        .setCustomId("mute_user")
-        .setLabel("كتم عضو")
-        .setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("panel_help").setLabel("الأوامر").setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId("filter_toggle").setLabel("فلتر").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("stats_show").setLabel("إحصائيات").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId("ban_user").setLabel("بان").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId("mute_user").setLabel("كتم").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("set_bc_role").setLabel("رتبة BC").setStyle(ButtonStyle.Primary)
     );
 
     return message.reply({ embeds: [embed], components: [row] });
   }
 
-  /* FILTER */
+  /* ================= FILTER ================= */
   if (filterEnabled) {
     const badWords = [
       "كلب","حمار","خرا","زبالة",
@@ -99,24 +87,27 @@ client.on("messageCreate", async (message) => {
       });
     }
   }
-
-  /* SETLOG */
-  if (cmd === "!setlog") {
-    const channel = message.mentions.channels.first();
-    if (!channel) return message.reply("❌ منشن روم");
-
-    guilds[message.guild.id] = { logChannel: channel.id };
-    fs.writeFileSync("./guilds.json", JSON.stringify(guilds, null, 2));
-
-    return message.reply("✅ تم تعيين اللوق");
-  }
 });
 
 /* ================= BUTTONS ================= */
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
-  /* FILTER */
+  /* ================= HELP PANEL ================= */
+  if (interaction.customId === "panel_help") {
+    const embed = new EmbedBuilder()
+      .setColor("Blue")
+      .setTitle("📜 الأوامر")
+      .setDescription(`
+!panel → لوحة التحكم
+!bc → برودكاست (للرتب المسموحة)
+!setlog → تعيين اللوق
+      `);
+
+    return interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+
+  /* ================= FILTER TOGGLE ================= */
   if (interaction.customId === "filter_toggle") {
     filterEnabled = !filterEnabled;
     return interaction.reply({
@@ -125,8 +116,8 @@ client.on("interactionCreate", async (interaction) => {
     });
   }
 
-  /* STATS */
-  if (interaction.customId === "show_stats") {
+  /* ================= STATS ================= */
+  if (interaction.customId === "stats_show") {
     const embed = new EmbedBuilder()
       .setColor("Green")
       .setTitle("📊 الإحصائيات")
@@ -138,15 +129,15 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
-  /* BAN MODAL */
-  if (interaction.customId === "ban_user") {
+  /* ================= SET BC ROLE ================= */
+  if (interaction.customId === "set_bc_role") {
     const modal = new ModalBuilder()
-      .setCustomId("ban_modal")
-      .setTitle("بان عضو");
+      .setCustomId("bc_role_modal")
+      .setTitle("تحديد رتبة BC");
 
     const input = new TextInputBuilder()
-      .setCustomId("user_id")
-      .setLabel("اكتب ID العضو")
+      .setCustomId("role_id")
+      .setLabel("حط ID الرتبة")
       .setStyle(TextInputStyle.Short);
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -154,15 +145,31 @@ client.on("interactionCreate", async (interaction) => {
     return interaction.showModal(modal);
   }
 
-  /* MUTE MODAL */
-  if (interaction.customId === "mute_user") {
+  /* ================= BAN ================= */
+  if (interaction.customId === "ban_user") {
     const modal = new ModalBuilder()
-      .setCustomId("mute_modal")
-      .setTitle("كتم عضو (10 دقائق)");
+      .setCustomId("ban_modal")
+      .setTitle("بان عضو");
 
     const input = new TextInputBuilder()
       .setCustomId("user_id")
-      .setLabel("اكتب ID العضو")
+      .setLabel("ID العضو")
+      .setStyle(TextInputStyle.Short);
+
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+    return interaction.showModal(modal);
+  }
+
+  /* ================= MUTE ================= */
+  if (interaction.customId === "mute_user") {
+    const modal = new ModalBuilder()
+      .setCustomId("mute_modal")
+      .setTitle("كتم عضو");
+
+    const input = new TextInputBuilder()
+      .setCustomId("user_id")
+      .setLabel("ID العضو")
       .setStyle(TextInputStyle.Short);
 
     modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -175,45 +182,40 @@ client.on("interactionCreate", async (interaction) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isModalSubmit()) return;
 
-  /* BAN */
+  /* ================= BC ROLE SAVE ================= */
+  if (interaction.customId === "bc_role_modal") {
+    const roleId = interaction.fields.getTextInputValue("role_id");
+
+    guilds[interaction.guild.id] = {
+      ...guilds[interaction.guild.id],
+      bcRole: roleId
+    };
+
+    fs.writeFileSync("./guilds.json", JSON.stringify(guilds, null, 2));
+
+    return interaction.reply({ content: "✅ تم حفظ رتبة BC", ephemeral: true });
+  }
+
+  /* ================= BAN ================= */
   if (interaction.customId === "ban_modal") {
     const id = interaction.fields.getTextInputValue("user_id");
 
-    try {
-      const member = await interaction.guild.members.fetch(id);
-      await member.ban({ reason: "Banned from panel" });
+    const member = await interaction.guild.members.fetch(id).catch(() => null);
+    if (!member) return interaction.reply({ content: "❌ ما لقيته", ephemeral: true });
 
-      return interaction.reply({
-        content: "🔨 تم تبنيد العضو",
-        ephemeral: true
-      });
-    } catch {
-      return interaction.reply({
-        content: "❌ فشل البان",
-        ephemeral: true
-      });
-    }
+    await member.ban();
+    return interaction.reply({ content: "🔨 تم البان", ephemeral: true });
   }
 
-  /* MUTE */
+  /* ================= MUTE ================= */
   if (interaction.customId === "mute_modal") {
     const id = interaction.fields.getTextInputValue("user_id");
 
-    try {
-      const member = await interaction.guild.members.fetch(id);
+    const member = await interaction.guild.members.fetch(id).catch(() => null);
+    if (!member) return interaction.reply({ content: "❌ ما لقيته", ephemeral: true });
 
-      await member.timeout(10 * 60 * 1000, "Muted from panel");
-
-      return interaction.reply({
-        content: "🔇 تم كتم العضو 10 دقائق",
-        ephemeral: true
-      });
-    } catch {
-      return interaction.reply({
-        content: "❌ فشل الكتم",
-        ephemeral: true
-      });
-    }
+    await member.timeout(10 * 60 * 1000);
+    return interaction.reply({ content: "🔇 تم الكتم", ephemeral: true });
   }
 });
 
