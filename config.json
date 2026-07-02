@@ -1,8 +1,15 @@
 {
   "TOKEN": "",
   "prefix": "!",
+
+  "ownerID": "1487469480069038171",
+
   "image": "https://i.imgur.com/4M34hi2.png",
+
   "timeoutMinutes": 10,
+
+  "embedColor": "#5865F2",
+
   "badWords": [
     "كلب",
     "حيوان",
@@ -26,5 +33,19 @@
     "انيجك",
     "انيچك",
     "خرا"
-  ]
+  ],
+
+  "antiSpam": {
+    "enabled": true,
+    "maxMessages": 5,
+    "time": 5000
+  },
+
+  "logs": {
+    "channel": ""
+  },
+
+  "broadcast": {
+    "dmDelay": 1000
+  }
 }
