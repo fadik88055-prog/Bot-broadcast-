@@ -8,14 +8,14 @@ const PORT = process.env.PORT || 3000;
 
 /* ================= DEVELOPERS ================= */
 const DEVELOPERS = [
-  "PUT_YOUR_DISCORD_ID_HERE"
+  "1487469480069038171"
 ];
 
-/* ================= DISCORD APP ================= */
+/* ================= DISCORD CONFIG ================= */
 const config = {
-  clientID: "PUT_CLIENT_ID",
-  clientSecret: "PUT_CLIENT_SECRET",
-  callbackURL: "https://YOUR-RAILWAY-URL/callback"
+  clientID: "1504088907283959911",
+  clientSecret: "eSR8n1ADvE2mgaGGvnCFSwhWZQvlMpDg",
+  callbackURL: "https://bot-broadcast-production.up.railway.app/callback"
 };
 
 /* ================= SESSION ================= */
@@ -41,12 +41,20 @@ passport.use(new DiscordStrategy({
 app.use(passport.initialize());
 app.use(passport.session());
 
+/* ================= CHECK DEV ================= */
+function checkDev(req, res, next) {
+  if (!req.user) return res.redirect("/");
+
+  if (!DEVELOPERS.includes(req.user.id)) {
+    return res.send("❌ هذا الداشبورد للمطورين فقط");
+  }
+
+  next();
+}
+
 /* ================= HOME ================= */
 app.get("/", (req, res) => {
-  res.send(`
-    <h1>🤖 Bot Dashboard</h1>
-    <a href="/login">Login with Discord</a>
-  `);
+  res.send(`<h1>🤖 Bot Dashboard</h1><a href="/login">Login</a>`);
 });
 
 /* ================= LOGIN ================= */
@@ -54,12 +62,10 @@ app.get("/login", passport.authenticate("discord"));
 
 app.get("/callback",
   passport.authenticate("discord", { failureRedirect: "/" }),
-  (req, res) => {
-    res.redirect("/dashboard");
-  }
+  (req, res) => res.redirect("/dashboard")
 );
 
-/* ================= DASHBOARD (PUBLIC) ================= */
+/* ================= PUBLIC DASHBOARD ================= */
 app.get("/dashboard", (req, res) => {
   if (!req.user) return res.redirect("/");
 
@@ -68,14 +74,13 @@ app.get("/dashboard", (req, res) => {
 
   req.user.guilds.forEach(g => {
     html += `
-      <div style="border:1px solid #ccc;padding:10px;margin:10px">
+      <div style="border:1px solid #ccc;margin:10px;padding:10px">
         <h3>${g.name}</h3>
         <a href="/guild/${g.id}">⚙ Open</a>
       </div>
     `;
   });
 
-  // زر لوحة المطورين (فقط للمطور)
   if (DEVELOPERS.includes(req.user.id)) {
     html += `<hr><a href="/dev">🔐 Developer Panel</a>`;
   }
@@ -93,21 +98,16 @@ app.get("/guild/:id", (req, res) => {
 
     <hr>
 
-    <h2>📢 Broadcast (Demo)</h2>
+    <h3>📢 Broadcast (Demo)</h3>
     <form action="/broadcast/${req.params.id}">
       <input name="msg" placeholder="Message" style="width:300px"/>
-      <select name="type">
-        <option value="all">All</option>
-        <option value="online">Online</option>
-      </select>
       <button>Send</button>
     </form>
 
     <hr>
 
-    <h2>🛠 Actions</h2>
-    <button onclick="alert('Soon')">Ban User</button>
-    <button onclick="alert('Soon')">Mute User</button>
+    <button onclick="alert('Soon')">Ban</button>
+    <button onclick="alert('Soon')">Mute</button>
   `);
 });
 
@@ -115,17 +115,36 @@ app.get("/guild/:id", (req, res) => {
 app.get("/broadcast/:id", (req, res) => {
   if (!req.user) return res.redirect("/");
 
-  const msg = req.query.msg;
-  const type = req.query.type;
-
   res.send(`
-    <h3>📡 Broadcast Sent (Demo)</h3>
-    <p>Message: ${msg}</p>
-    <p>Type: ${type}</p>
-    <p>⚠ يحتاج ربط فعلي مع البوت API</p>
+    <h3>📡 Broadcast Sent</h3>
+    <p>${req.query.msg}</p>
+    <p>⚠ يحتاج ربط مع البوت</p>
   `);
 });
 
 /* ================= DEV PANEL ================= */
-app.get("/dev", (req, res) => {
-  if (!req.user) return res
+app.get("/dev", checkDev, (req, res) => {
+  res.send(`
+    <h1>🔐 Developer Panel</h1>
+
+    <form action="/dev/broadcast">
+      <input name="msg" placeholder="Broadcast message" style="width:300px"/>
+      <button>Send</button>
+    </form>
+
+    <form action="/dev/command">
+      <input name="cmd" placeholder="Bot command" style="width:300px"/>
+      <button>Run</button>
+    </form>
+  `);
+});
+
+/* ================= DEV ACTIONS ================= */
+app.get("/dev/broadcast", checkDev, (req, res) => {
+  console.log("DEV BROADCAST:", req.query.msg);
+  res.send("📡 Sent to bot (needs API connect)");
+});
+
+app.get("/dev/command", checkDev, (req, res) => {
+  console.log("DEV COMMAND:", req.query.cmd);
+  res.send("
