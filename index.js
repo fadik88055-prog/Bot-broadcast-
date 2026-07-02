@@ -230,13 +230,26 @@ function logEvent(data) {
     fs.writeFileSync("./logs.json", JSON.stringify(logs, null, 4));
 }
 client.logEvent = logEvent;
+const { Client, GatewayIntentBits } = require("discord.js");
+const config = require("./config.json");
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+    ]
+});
+/* ===========================
+   EVENT (IMPORTANT)
+=========================== */
+
+client.on("interactionCreate", async (interaction) => {
+    require("./interactionCreate").execute(interaction, client);
+});
 /* ===========================
    LOGIN
 =========================== */
 
-client.login(process.env.TOKEN || config.TOKEN);
-/* ===========================
-   LOGIN
-=========================== */
-
-client.login(process.env.TOKEN || config.TOKEN);
+client.login(process.env.TOKEN || config.TOKEN)
