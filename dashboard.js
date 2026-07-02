@@ -2,8 +2,6 @@ const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const DiscordStrategy = require("passport-discord").Strategy;
-
-/* ================= FETCH ================= */
 const fetch = require("node-fetch");
 
 const app = express();
@@ -23,7 +21,7 @@ const config = {
 
 /* ================= SESSION ================= */
 app.use(session({
-  secret: "k3_dashboard_secret",
+  secret: "dashboard_secret",
   resave: false,
   saveUninitialized: false
 }));
@@ -49,7 +47,7 @@ function checkDev(req, res, next) {
   if (!req.user) return res.redirect("/");
 
   if (!DEVELOPERS.includes(req.user.id)) {
-    return res.send("❌ Dev only panel");
+    return res.send("❌ Developer only");
   }
 
   next();
@@ -57,7 +55,10 @@ function checkDev(req, res, next) {
 
 /* ================= HOME ================= */
 app.get("/", (req, res) => {
-  res.send(`<h1>🤖 Bot Dashboard</h1><a href="/login">Login</a>`);
+  res.send(`
+    <h1>🤖 Bot Dashboard</h1>
+    <a href="/login">Login with Discord</a>
+  `);
 });
 
 /* ================= LOGIN ================= */
@@ -73,43 +74,52 @@ app.get("/dashboard", (req, res) => {
   if (!req.user) return res.redirect("/");
 
   let html = `<h1>👋 Welcome ${req.user.username}</h1>`;
-  html += `<h2>Servers</h2>`;
+  html += `<h2>📦 Servers</h2>`;
 
   req.user.guilds.forEach(g => {
     html += `
       <div style="border:1px solid #ccc;margin:10px;padding:10px">
         <h3>${g.name}</h3>
-        <a href="/guild/${g.id}">Open</a>
+        <a href="/guild/${g.id}">Open Panel</a>
       </div>
     `;
   });
 
   if (DEVELOPERS.includes(req.user.id)) {
-    html += `<hr><a href="/dev">🔐 Dev Panel</a>`;
+    html += `<hr><a href="/dev">🔐 Developer Panel</a>`;
   }
 
   res.send(html);
 });
 
-/* ================= GUILD ================= */
+/* ================= GUILD PANEL ================= */
 app.get("/guild/:id", (req, res) => {
   if (!req.user) return res.redirect("/");
 
   res.send(`
-    <h1>Server Panel</h1>
+    <h1>⚙ Server Panel</h1>
 
+    <p><b>Guild ID:</b> ${req.params.id}</p>
+
+    <hr>
+
+    <h2>📢 Broadcast</h2>
     <form action="/broadcast/${req.params.id}">
-      <input name="msg" placeholder="message"/>
-      <button>Send Broadcast</button>
+      <input name="msg" placeholder="Message"/>
+      <button>Send</button>
     </form>
 
+    <hr>
+
+    <h2>👢 Kick User</h2>
     <form action="/kick/${req.params.id}">
-      <input name="user"/>
+      <input name="user" placeholder="User ID"/>
       <button>Kick</button>
     </form>
 
+    <h2>🔨 Ban User</h2>
     <form action="/ban/${req.params.id}">
-      <input name="user"/>
+      <input name="user" placeholder="User ID"/>
       <button>Ban</button>
     </form>
   `);
@@ -131,7 +141,7 @@ app.get("/broadcast/:id", async (req, res) => {
     })
   });
 
-  res.send("📡 Broadcast sent");
+  res.send("📡 Broadcast sent successfully");
 });
 
 /* ================= KICK ================= */
@@ -151,7 +161,7 @@ app.get("/kick/:id", async (req, res) => {
     })
   });
 
-  res.send("👢 Kicked");
+  res.send("👢 User kicked");
 });
 
 /* ================= BAN ================= */
@@ -171,15 +181,16 @@ app.get("/ban/:id", async (req, res) => {
     })
   });
 
-  res.send("🔨 Banned");
+  res.send("🔨 User banned");
 });
 
 /* ================= DEV PANEL ================= */
 app.get("/dev", checkDev, (req, res) => {
   res.send(`
-    <h1>Dev Panel</h1>
+    <h1>🔐 Developer Panel</h1>
+
     <form action="/dev/broadcast">
-      <input name="msg"/>
+      <input name="msg" placeholder="Message"/>
       <button>Send</button>
     </form>
   `);
@@ -187,5 +198,5 @@ app.get("/dev", checkDev, (req, res) => {
 
 /* ================= START ================= */
 app.listen(PORT, () => {
-  console.log("🌐 Dashboard running on", PORT);
+  console.log("🌐 Dashboard running on port", PORT);
 });
