@@ -23,7 +23,6 @@ const client = new Client({
 });
 
 /* ================= INTERACTIONS ================= */
-
 client.on("interactionCreate", async (interaction) => {
     require("./interactionCreate").execute(interaction, client);
 });
