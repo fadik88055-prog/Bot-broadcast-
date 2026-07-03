@@ -1,3 +1,4 @@
+console.log("INTERACTION FILE LOADED");
 const {
     EmbedBuilder,
     ActionRowBuilder,
