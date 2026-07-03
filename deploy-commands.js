@@ -1,30 +1,20 @@
-require('dotenv').config();
 const { REST, Routes, SlashCommandBuilder } = require('discord.js');
 const config = require('./config.json');
 
-// تعريف أمر السلاش
 const commands = [
     new SlashCommandBuilder()
         .setName('panel')
         .setDescription('فتح لوحة التحكم الإدارية لبث الرسائل والأنظمة')
 ].map(command => command.toJSON());
 
-const token = process.env.TOKEN || config.TOKEN;
-
-if (!token) {
-    console.error("❌ خطأ: لم يتم العثور على توكن البوت في الملفات!");
-    process.exit(1);
-}
-
-const rest = new REST({ version: '10' }).setToken(token);
+const rest = new REST({ version: '10' }).setToken(config.TOKEN);
 
 (async () => {
     try {
-        console.log('🔄 جاري تسجيل أمر السلاش (/panel) لجميع السيرفرات...');
+        console.log('🔄 جاري تسجيل أمر السلاش (/panel) لجميع السيرفرات عالمياً...');
         
-        // استخدام آيدي البوت الخاص بك لتسجيل الأمر عالمياً (Global Command)
         await rest.put(
-            Routes.applicationCommands('1504088907283959911'), 
+            Routes.applicationCommands(config.botID), 
             { body: commands }
         );
         
