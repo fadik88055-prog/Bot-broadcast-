@@ -1,5 +1,5 @@
 {
-  "TOKEN": "",
+  "TOKEN": "MTUwNDA4ODkwNzI4Mzk1OTkxMQ.G-13jC.IaBFqff1TbeZOxXPGSGc-Td48hbkgE3Wmg3RNo",
   "prefix": "!",
   "botID": "1504088907283959911",
   "ownerID": "1487469480069038171",
@@ -19,5 +19,5 @@
     "maxMessages": 5,
     "time": 5000
   },
-  "logChannelId": ""
+  "logChannelName": "log-bot"
 }
