@@ -45,4 +45,8 @@ app.get("/", (req, res) => { res.send("Bot is completely operational 24/7!"); })
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log("Web server active on port", PORT); });
 
-client.login(config.TOKEN);
+
+// =========================================================
+// 🔒 التعديل لحل مشكلة الكراش وقراءة التوكن بأمان من Railway 🔒
+// =========================================================
+client.login(process.env.TOKEN || config.TOKEN);
