@@ -1,14 +1,9 @@
 {
   "TOKEN": "",
-
   "prefix": "!",
-
   "ownerID": "1487469480069038171",
-
   "image": "https://i.imgur.com/4M34hi2.png",
-
   "timeoutMinutes": 10,
-
   "embedColor": "#5865F2",
 
   "status": {
@@ -48,6 +43,7 @@
 
   "logs": {
     "channel": ""
-  }
+  },
+
+  "logChannelId": ""
 }
-"logChannelId":""
