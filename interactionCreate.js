@@ -196,10 +196,12 @@ if (customId === "developer") {
             .setStyle(ButtonStyle.Danger)
 
     );
-
-    return interaction.reply({
-        embeds: [embed],
-        components: [row],
+return interaction.reply({
+    embeds: [embed],
+    components: [row],
+    ephemeral: true
+});
+}
        /* BOT INFO */
 
 if (customId === "bot_info") {
