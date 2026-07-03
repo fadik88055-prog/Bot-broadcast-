@@ -24,7 +24,19 @@ const client = new Client({
 
 /* ================= INTERACTIONS ================= */
 client.on("interactionCreate", async (interaction) => {
-    require("./interactionCreate").execute(interaction, client);
+    try {
+        await require("./interactionCreate").execute(interaction, client);
+    } catch (err) {
+        console.error("INTERACTION ERROR:");
+        console.error(err);
+
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: "❌ صار خطأ داخل البوت.",
+                ephemeral: true
+            }).catch(() => {});
+        }
+    }
 });
 
 /* ================= READY ================= */
