@@ -13,6 +13,8 @@ module.exports = {
 
     async execute(interaction, client) {
 
+    console.log("BUTTON CLICKED:", interaction.customId);
+        
         const { customId, member, user, guild } = interaction;
 
         if (!guild) return;
