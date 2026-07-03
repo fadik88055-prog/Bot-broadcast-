@@ -1,16 +1,8 @@
-const {
-    Client,
-    GatewayIntentBits,
-    Partials,
-    ActivityType
-} = require("discord.js");
-
+const { Client, GatewayIntentBits, Partials, ActivityType } = require("discord.js");
 const express = require("express");
 const config = require("./config.json");
 
 const app = express();
-app.use(express.json());
-
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -27,52 +19,30 @@ client.on("interactionCreate", async (interaction) => {
     try {
         await require("./interactionCreate").execute(interaction, client);
     } catch (err) {
-        console.error("INTERACTION ERROR:");
-        console.error(err);
-
-        if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({
-                content: "❌ صار خطأ داخل البوت.",
-                ephemeral: true
-            }).catch(() => {});
-        }
+        console.error("INTERACTION ERROR:", err);
     }
 });
 
-/* ================= READY ================= */
-client.once("clientReady", () => {
-    console.log(`Logged in as ${client.user.tag}`);
-
-    client.user.setPresence({
-        activities: [{
-            name: "Broadcast Bot",
-            type: ActivityType.Watching
-        }],
-        status: "online"
-    });
-});
-
-/* ================= EXPRESS ================= */
-
-app.get("/", (req, res) => {
-    res.send("Bot is running");
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log("Dashboard running on", PORT);
-});
-const panel = require("./panel");
+/* ================= EVENTS ================= */
 const messageCreate = require("./messageCreate");
 const antiSpam = require("./antiSpam");
 
 client.on("messageCreate", async (message) => {
-    await panel.execute(message, client);
     await messageCreate.execute(message, client);
     await antiSpam.execute(message, client);
 });
 
-/* ================= LOGIN ================= */
+client.once("ready", () => {
+    console.log(`✅ ${client.user.tag} يعمل الآن بنجاح على جميع السيرفرات!`);
+    client.user.setPresence({
+        activities: [{ name: "Broadcast Dashboard /panel", type: ActivityType.Custom }],
+        status: "online"
+    });
+});
 
-client.login(process.env.TOKEN || config.TOKEN);
+/* ================= EXPRESS ONLINE SERVER ================= */
+app.get("/", (req, res) => { res.send("Bot is completely operational 24/7!"); });
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => { console.log("Web server active on port", PORT); });
+
+client.login(config.TOKEN);
