@@ -346,20 +346,21 @@ if (customId === "set_color") {
             /* BROADCAST MODALS */
             if (customId === "bc_dm" || customId === "bc_channel") {
 
-                return interaction.showModal({
-                    title: customId === "bc_dm" ? "DM Broadcast" : "Channel Broadcast",
-                    custom_id: customId === "bc_dm" ? "bc_dm_modal" : "bc_channel_modal",
-                    components: [{
-                        type: 1,
-                        components: [{
-                            type: 4,
-                            custom_id: "message",
-                            label: "Message",
-                            style: 2,
-                            required: true
-                        }]
-                    }]
-                });
+    const modal = new ModalBuilder()
+        .setCustomId(customId === "bc_dm" ? "bc_dm_modal" : "bc_channel_modal")
+        .setTitle(customId === "bc_dm" ? "DM Broadcast" : "Channel Broadcast");
+
+    const messageInput = new TextInputBuilder()
+        .setCustomId("message")
+        .setLabel("Message")
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true);
+
+    const row = new ActionRowBuilder().addComponents(messageInput);
+
+    modal.addComponents(row);
+
+    return interaction.showModal(modal);
             }
 
             /* MODERATION MODALS */
