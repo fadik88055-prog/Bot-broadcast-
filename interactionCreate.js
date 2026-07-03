@@ -59,10 +59,13 @@ module.exports = {
                         .setLabel("📢 Channel")
                         .setStyle(ButtonStyle.Success)
                 );
+return interaction.reply({
+    embeds: [embed],
+    components: [row],
+    ephemeral: true
+});
 
-                return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
             }
-
             /* MODERATION PANEL */
             if (customId === "moderation") {
 
