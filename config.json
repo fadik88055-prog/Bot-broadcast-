@@ -1,49 +1,49 @@
 {
-  "TOKEN": "",
-  "prefix": "!",
-  "ownerID": "1487469480069038171",
-  "image": "https://i.imgur.com/4M34hi2.png",
-  "timeoutMinutes": 10,
-  "embedColor": "#5865F2",
+"TOKEN": "",
+"prefix": "!",
+"ownerID": "1487469480069038171",
+"image": "https://i.imgur.com/4M34hi2.png",
+"timeoutMinutes": 10,
+"embedColor": "#5865F2",
 
-  "status": {
-    "text": "Broadcast Dashboard"
-  },
-  
-  "badWords": [
-    "كلب",
-    "حيوان",
-    "خول",
-    "ابن الكلب",
-    "كس",
-    "كص",
-    "زب",
-    "زبالة",
-    "منيوك",
-    "شرموطة",
-    "كحبة",
-    "كواد",
-    "يلعن",
-    "يلعن أبوك",
-    "يلعن أمك",
-    "كسم",
-    "كسمك",
-    "نيج",
-    "نيك",
-    "انيجك",
-    "انيچك",
-    "خرا"
-  ],
+"status": {
+"text": "Broadcast Dashboard"
+},
 
-  "antiSpam": {
-    "enabled": true,
-    "maxMessages": 5,
-    "time": 5000
-  },
+"badWords": [
+"كلب",
+"حيوان",
+"خول",
+"ابن الكلب",
+"كس",
+"كص",
+"زب",
+"زبالة",
+"منيوك",
+"شرموطة",
+"كحبة",
+"كواد",
+"يلعن",
+"يلعن أبوك",
+"يلعن أمك",
+"كسم",
+"كسمك",
+"نيج",
+"نيك",
+"انيجك",
+"انيچك",
+"خرا"
+],
 
-  "logs": {
-    "channel": ""
-  },
+"antiSpam": {
+"enabled": true,
+"maxMessages": 5,
+"time": 5000
+},
 
-  "logChannelId": ""
+"logs": {
+"channel": ""
+},
+
+"logChannelId": ""
 }
