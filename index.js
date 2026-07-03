@@ -53,6 +53,15 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log("Dashboard running on", PORT);
 });
+const panel = require("./panel");
+const messageCreate = require("./messageCreate");
+const antiSpam = require("./antiSpam");
+
+client.on("messageCreate", async (message) => {
+    await panel.execute(message, client);
+    await messageCreate.execute(message, client);
+    await antiSpam.execute(message, client);
+});
 
 /* ================= LOGIN ================= */
 
