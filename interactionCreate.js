@@ -8,497 +8,256 @@ const {
     TextInputBuilder,
     TextInputStyle
 } = require("discord.js");
+
 const config = require("./config.json");
+
+// دالة ذكية للبحث عن روم اللوق بالاسم داخل السيرفر الحالي
+async function sendBotLog(guild, client, title, description, color = "#5865F2", fields = []) {
+    const logChannel = guild.channels.cache.find(ch => ch.name === config.logChannelName);
+    if (!logChannel) return; // إذا السيرفر ما فيه روم بهذا الاسم، يتخطى ولا يعطي خطأ
+
+    const logEmbed = new EmbedBuilder()
+        .setColor(color)
+        .setTitle(title)
+        .setDescription(description)
+        .setTimestamp();
+
+    if (fields.length > 0) logEmbed.addFields(fields);
+
+    logChannel.send({ embeds: [logEmbed] }).catch(() => {});
+}
 
 module.exports = {
     name: "interactionCreate",
 
     async execute(interaction, client) {
+        if (!interaction.guild) return;
 
-        const { customId, member, user, guild } = interaction;
-
-        if (!guild) return;
-
-        const logChannel = guild.channels.cache.get(config.logChannelId);
-
-        /* ===========================
-           BUTTONS
-        =========================== */
-
-        if (interaction.isButton()) {
-
-            /* CLOSE PANEL */
-            if (customId === "close_panel") {
-                return interaction.update({
-                    content: "❌ تم إغلاق اللوحة",
-                    embeds: [],
-                    components: []
-                });
-            }
-
-            /* BROADCAST MENU */
-            if (customId === "broadcast") {
-
-                if (!member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                    return interaction.reply({ content: "❌ ما عندك صلاحية", ephemeral: true });
+        // ================= أمر السلاش /panel =================
+        if (interaction.isChatInputCommand()) {
+            if (interaction.commandName === 'panel') {
+                if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                    return interaction.reply({ content: "❌ ما عندك صلاحية الإدارة لاستخدام اللوحة.", ephemeral: true });
                 }
+
+                const isOwner = interaction.user.id === config.ownerID;
 
                 const embed = new EmbedBuilder()
-                    .setTitle("📢 Broadcast System")
-                    .setColor(config.embedColor || 0x5865F2);
+                    .setColor(config.embedColor || "#5865F2")
+                    .setTitle("🎛️ لوحة التحكم")
+                    .setDescription("اختار من الأزرار بالأسفل لتشغيل النظام المطلوب")
+                    .setThumbnail(config.image || null)
+                    .setFooter({ text: `Server: ${interaction.guild.name}` });
 
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId("bc_dm")
-                        .setLabel("📨 DM")
-                        .setStyle(ButtonStyle.Primary),
-
-                    new ButtonBuilder()
-                        .setCustomId("bc_channel")
-                        .setLabel("📢 Channel")
-                        .setStyle(ButtonStyle.Success)
+                const row1 = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId("broadcast").setLabel("📢 Broadcast").setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder().setCustomId("moderation").setLabel("👮 Moderation").setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder().setCustomId("protection").setLabel("🛡 Protection").setStyle(ButtonStyle.Secondary)
                 );
 
-                return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-            }
-
-            /* MODERATION PANEL */
-            if (customId === "moderation") {
-
-                if (!member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                    return interaction.reply({ content: "❌ ما عندك صلاحية", ephemeral: true });
-                }
-
-                const embed = new EmbedBuilder()
-                    .setTitle("👮 Moderation Panel")
-                    .setColor(config.embedColor || 0x5865F2);
-
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId("kick_user").setLabel("👢 Kick").setStyle(ButtonStyle.Danger),
-                    new ButtonBuilder().setCustomId("ban_user").setLabel("🔨 Ban").setStyle(ButtonStyle.Danger),
-                    new ButtonBuilder().setCustomId("timeout_user").setLabel("⏱ Timeout").setStyle(ButtonStyle.Secondary),
-                    new ButtonBuilder().setCustomId("clear_chat").setLabel("🗑 Clear").setStyle(ButtonStyle.Primary)
+                const row2 = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId("settings").setLabel("⚙ Settings").setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId("statistics").setLabel("📊 Statistics").setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId("close_panel").setLabel("❌ Close").setStyle(ButtonStyle.Danger)
                 );
 
-                return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-            }
-
-            /* STATS */
-        if (customId === "statistics") {
-
-    const embed = new EmbedBuilder()
-        .setTitle("📊 Stats")
-        .setColor(config.embedColor || 0x5865F2)
-        .addFields(
-            { name: "Servers", value: `${client.guilds.cache.size}`, inline: true },
-            { name: "Users", value: `${client.users.cache.size}`, inline: true },
-            { name: "Ping", value: `${client.ws.ping}ms`, inline: true }
-        );
-
-    return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
-            /* PROTECTION */
-
-if (customId === "protection") {
-
-    const embed = new EmbedBuilder()
-        .setTitle("🛡 Protection")
-        .setColor(config.embedColor || "#5865F2")
-        .setDescription(
-            "اختر النظام الذي تريد التحكم به."
-        );
-
-    const row = new ActionRowBuilder().addComponents(
-
-        new ButtonBuilder()
-            .setCustomId("anti_spam")
-            .setLabel("🚫 Anti Spam")
-            .setStyle(ButtonStyle.Primary),
-
-        new ButtonBuilder()
-            .setCustomId("bad_words")
-            .setLabel("🚷 Bad Words")
-            .setStyle(ButtonStyle.Secondary)
-
-    );
-
-    return interaction.reply({
-        embeds: [embed],
-        components: [row],
-        ephemeral: true
-    });
-
-}
-            /* SETTINGS */
-
-if (customId === "settings") {
-
-    const embed = new EmbedBuilder()
-        .setTitle("⚙️ Settings")
-        .setColor(config.embedColor || "#5865F2")
-        .setDescription("اختر الإعداد الذي تريد تعديله.");
-
-    const row = new ActionRowBuilder().addComponents(
-
-        new ButtonBuilder()
-            .setCustomId("set_logs")
-            .setLabel("📜 Logs")
-            .setStyle(ButtonStyle.Primary),
-
-        new ButtonBuilder()
-            .setCustomId("set_image")
-            .setLabel("🖼 Image")
-            .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-            .setCustomId("set_color")
-            .setLabel("🎨 Color")
-            .setStyle(ButtonStyle.Success)
-
-    );
-
-    return interaction.reply({
-        embeds: [embed],
-        components: [row],
-        ephemeral: true
-    });
-
-}
-            /* DEVELOPER */
-
-if (customId === "developer") {
-
-    if (interaction.user.id !== config.ownerID) {
-        return interaction.reply({
-            content: "❌ هذا الزر للمطور فقط.",
-            ephemeral: true
-        });
-    }
-
-    const embed = new EmbedBuilder()
-        .setTitle("👑 Developer Panel")
-        .setColor(config.embedColor || "#5865F2")
-        .setDescription("لوحة المطور.");
-
-    const row = new ActionRowBuilder().addComponents(
-
-        new ButtonBuilder()
-            .setCustomId("bot_info")
-            .setLabel("🤖 Bot Info")
-            .setStyle(ButtonStyle.Primary),
-
-        new ButtonBuilder()
-            .setCustomId("reload_bot")
-            .setLabel("🔄 Reload")
-            .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-            .setCustomId("shutdown_bot")
-            .setLabel("🛑 Shutdown")
-            .setStyle(ButtonStyle.Danger)
-
-    );
-return interaction.reply({
-    embeds: [embed],
-    components: [row],
-    ephemeral: true
-});
-}
-       /* BOT INFO */
-
-if (customId === "bot_info") {
-
-    const embed = new EmbedBuilder()
-        .setTitle("🤖 معلومات البوت")
-        .setColor(config.embedColor || "#5865F2")
-        .addFields(
-            {
-                name: "📡 Ping",
-                value: `${client.ws.ping}ms`,
-                inline: true
-            },
-            {
-                name: "🌍 Servers",
-                value: `${client.guilds.cache.size}`,
-                inline: true
-            },
-            {
-                name: "👥 Users",
-                value: `${client.users.cache.size}`,
-                inline: true
-            },
-            {
-                name: "🆔 Bot ID",
-                value: client.user.id,
-                inline: false
-            }
-        );
-
-    return interaction.reply({
-        embeds: [embed],
-        ephemeral: true
-    });
-
-}
-        /* RELOAD */
-
-if (customId === "reload_bot") {
-
-    if (interaction.user.id !== config.ownerID) {
-        return interaction.reply({
-            content: "❌ هذا الزر للمطور فقط.",
-            ephemeral: true
-        });
-    }
-
-    await interaction.reply({
-        content: "🔄 تم إعادة تحميل البوت (تحديث اللوحة فقط).",
-        ephemeral: true
-    });
-
-}
-    /* SHUTDOWN */
-
-if (customId === "shutdown_bot") {
-
-    if (interaction.user.id !== config.ownerID) {
-        return interaction.reply({
-            content: "❌ هذا الزر للمطور فقط.",
-            ephemeral: true
-        });
-    }
-
-    await interaction.reply({
-        content: "🛑 سيتم إيقاف البوت...",
-        ephemeral: true
-    });
-
-    process.exit(0);
-}
-    /* ANTI SPAM */
-
-if (customId === "anti_spam") {
-
-    return interaction.reply({
-        content: config.antiSpam.enabled
-            ? "🟢 نظام Anti-Spam مفعل."
-            : "🔴 نظام Anti-Spam معطل.",
-        ephemeral: true
-    });
-
-}
-
-/* BAD WORDS */
-
-if (customId === "bad_words") {
-
-    const embed = new EmbedBuilder()
-        .setTitle("🚷 Bad Words")
-        .setColor(config.embedColor || "#5865F2")
-        .setDescription(
-            `عدد الكلمات المحظورة: **${config.badWords.length}**`
-        );
-
-    return interaction.reply({
-        embeds: [embed],
-        ephemeral: true
-    });
-
-}
-    /* LOGS */
-
-if (customId === "set_logs") {
-
-    return interaction.reply({
-        content:
-            `📜 روم اللوقات الحالي:\n<#${
-                config.logChannelId || "غير محدد"
-            }>`,
-        ephemeral: true
-    });
-
-}
-
-/* IMAGE */
-
-if (customId === "set_image") {
-
-    const embed = new EmbedBuilder()
-        .setTitle("🖼 صورة البوت")
-        .setColor(config.embedColor || "#5865F2")
-        .setImage(config.image);
-
-    return interaction.reply({
-        embeds: [embed],
-        ephemeral: true
-    });
-
-}
-
-/* COLOR */
-
-if (customId === "set_color") {
-
-    return interaction.reply({
-        content: `🎨 اللون الحالي: ${config.embedColor}`,
-        ephemeral: true
-    });
-
-}
-            /* BROADCAST MODALS */
-            if (customId === "bc_dm" || customId === "bc_channel") {
-
-    const modal = new ModalBuilder()
-        .setCustomId(customId === "bc_dm" ? "bc_dm_modal" : "bc_channel_modal")
-        .setTitle(customId === "bc_dm" ? "DM Broadcast" : "Channel Broadcast");
-
-    const messageInput = new TextInputBuilder()
-        .setCustomId("message")
-        .setLabel("Message")
-        .setStyle(TextInputStyle.Paragraph)
-        .setRequired(true);
-
-    const row = new ActionRowBuilder().addComponents(messageInput);
-
-    modal.addComponents(row);
-
-    return interaction.showModal(modal);
-            }
-
-            /* MODERATION MODALS */
-            if (["kick_user", "ban_user", "timeout_user"].includes(customId)) {
-
-                return interaction.showModal({
-                    title: "User ID",
-                    custom_id: customId.replace("_user", "_modal"),
-                    components: [{
-                        type: 1,
-                        components: [{
-                            type: 4,
-                            custom_id: "user_id",
-                            label: "User ID",
-                            style: 1,
-                            required: true
-                        }]
-                    }]
-                });
-            }
-
-            if (customId === "clear_chat") {
-
-                await interaction.channel.bulkDelete(50).catch(() => {});
-
-                if (logChannel) {
-                    logChannel.send(`🗑 Clear by <@${interaction.user.id}>`).catch(() => {});
+                await sendBotLog(interaction.guild, client, "🔑 فتح لوحة التحكم", `قام المسؤول **${interaction.user.tag}** بطلب فتح اللوحة.`, "#5865F2");
+
+                if (isOwner) {
+                    const row3 = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId("developer").setLabel("👑 Developer").setStyle(ButtonStyle.Primary)
+                    );
+                    return interaction.reply({ embeds: [embed], components: [row1, row2, row3], ephemeral: true });
                 }
 
-                return interaction.reply({ content: "🗑 Done", ephemeral: true });
+                return interaction.reply({ embeds: [embed], components: [row1, row2], ephemeral: true });
             }
+            return;
         }
 
-        /* ===========================
-           MODALS
-        =========================== */
+        if (!interaction.isButton() && !interaction.isModalSubmit()) return;
+        const { customId } = interaction;
 
+        // ❌ إغلاق اللوحة
+        if (interaction.isButton() && customId === "close_panel") {
+            await sendBotLog(interaction.guild, client, "❌ إغلاق لوحة التحكم", `تم إغلاق اللوحة بواسطة **${interaction.user.tag}**.`, "#727d8a");
+            return interaction.update({ content: "❌ تم إغلاق لوحة التحكم بنجاح.", embeds: [], components: [] });
+        }
+
+        // 📢 خيارات الـ Broadcast
+        if (interaction.isButton() && customId === "broadcast") {
+            if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+
+            const embed = new EmbedBuilder()
+                .setColor(config.embedColor)
+                .setTitle("📢 Broadcast System")
+                .setDescription("اختار نوع البث المراد عمله:");
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("bc_dm_modal").setLabel("📨 DM (الخاص مع منشن)").setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId("bc_channel_modal").setLabel("📢 Channel (بروم)").setStyle(ButtonStyle.Success)
+            );
+            return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        }
+
+        // ظهور الـ Modals للبرودكاست
+        if (interaction.isButton() && (customId === "bc_dm_modal" || customId === "bc_channel_modal")) {
+            const modal = new ModalBuilder()
+                .setCustomId(customId === "bc_dm_modal" ? "send_bc_dm" : "send_bc_channel")
+                .setTitle(customId === "bc_dm_modal" ? "بث رسائل خاص" : "بث رسالة داخل روم");
+
+            const bcInput = new TextInputBuilder()
+                .setCustomId("bc_text")
+                .setLabel("اكتب نص البرودكاست هنا")
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(bcInput));
+            return await interaction.showModal(modal);
+        }
+
+        // معالجة نصوص البرودكاست
         if (interaction.isModalSubmit()) {
+            const messageText = interaction.fields.getTextInputValue("bc_text");
 
-            const guild = interaction.guild;
+            if (interaction.customId === "send_bc_dm") {
+                await interaction.reply({ content: "⏳ جاري بدء إرسال البرودكاست الخاص للأعضاء مع المنشن...", ephemeral: true });
+                let successCount = 0;
+                const members = await interaction.guild.members.fetch();
 
-            /* DM BROADCAST */
-            if (interaction.customId === "bc_dm_modal") {
-
-                const message = interaction.fields.getTextInputValue("message");
-
-                let success = 0;
-                let failed = 0;
-
-                const members = await guild.members.fetch();
-
-                for (const m of members.values()) {
-                    if (m.user.bot) continue;
-
+                for (const [id, member] of members) {
+                    if (member.user.bot) continue;
                     try {
-                        await m.send(`📢 ${message}`);
-                        success++;
-                    } catch {
-                        failed++;
-                    }
+                        await member.send({ content: `📢 **برودكاست جديد!**\n\n${messageText}\n\n${member}` });
+                        successCount++;
+                    } catch (err) {}
                 }
 
-                if (logChannel) {
-                    logChannel.send(
-                        `📢 DM BROADCAST\n👤 <@${interaction.user.id}>\n✅ ${success} ❌ ${failed}`
-                    ).catch(() => {});
-                }
-
-                return interaction.reply({
-                    content: `Done\n✅ ${success} ❌ ${failed}`,
-                    ephemeral: true
-                });
+                await sendBotLog(interaction.guild, client, "📨 تم إرسال برودكاست خاص (DM)", "تفاصيل العملية:", "#00FF00", [
+                    { name: "👤 المسؤول المرسل:", value: `${interaction.user.tag}` },
+                    { name: "💬 النص المرسل:", value: messageText },
+                    { name: "📊 النتيجة:", value: `تم الإرسال لـ **${successCount}** عضو.` }
+                ]);
+                return interaction.followUp({ content: `✅ تم الإرسال بنجاح إلى ${successCount} عضو.`, ephemeral: true });
             }
 
-            /* CHANNEL BROADCAST */
-            if (interaction.customId === "bc_channel_modal") {
+            if (interaction.customId === "send_bc_channel") {
+                await interaction.channel.send({ content: `📢 **إعلان هام (Broadcast):**\n\n${messageText}` });
+                await interaction.reply({ content: "✅ تم نشر البرودكاست في هذه الروم.", ephemeral: true });
 
-                const message = interaction.fields.getTextInputValue("message");
-
-                await interaction.channel.send(`📢 ${message}`);
-
-                if (logChannel) {
-                    logChannel.send(
-                        `📢 CHANNEL BROADCAST\n👤 <@${interaction.user.id}>`
-                    ).catch(() => {});
-                }
-
-                return interaction.reply({ content: "Sent", ephemeral: true });
+                await sendBotLog(interaction.guild, client, "📢 تم إرسال برودكاست في روم", "تفاصيل العملية:", "#00FF00", [
+                    { name: "👤 المسؤول المرسل:", value: `${interaction.user.tag}` },
+                    { name: "📍 الروم:", value: `${interaction.channel}` },
+                    { name: "💬 النص المعلن:", value: messageText }
+                ]);
+                return;
             }
+        }
 
-            /* MODERATION */
+        // الإحصائيات 📊
+        if (interaction.isButton() && customId === "statistics") {
+            const embed = new EmbedBuilder()
+                .setColor(config.embedColor)
+                .setTitle("📊 Statistics")
+                .addFields(
+                    { name: " Servers", value: `${client.guilds.cache.size}`, inline: true },
+                    { name: "👥 Users", value: `${client.users.cache.size}`, inline: true },
+                    { name: "📡 Ping", value: `${client.ws.ping}ms`, inline: true }
+                );
+            await sendBotLog(interaction.guild, client, "📊 استعلام إحصائيات", `قام **${interaction.user.tag}** برؤية الإحصائيات.`, "#00aeff");
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
 
-            const userId = interaction.fields.getTextInputValue("user_id");
-            const target = await guild.members.fetch(userId).catch(() => null);
+        // الحماية 🛡
+        if (interaction.isButton() && customId === "protection") {
+            const embed = new EmbedBuilder().setColor(config.embedColor).setTitle("🛡 Protection Status");
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("anti_spam").setLabel("🚫 Anti Spam").setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId("bad_words").setLabel("🚷 Bad Words").setStyle(ButtonStyle.Secondary)
+            );
+            return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        }
 
-            /* KICK */
-            if (interaction.customId === "kick_modal") {
+        if (interaction.isButton() && customId === "anti_spam") {
+            return interaction.reply({ content: config.antiSpam.enabled ? "🟢 نظام **Anti-Spam** مفعل." : "🔴 نظام **Anti-Spam** معطل.", ephemeral: true });
+        }
 
-                if (!target) return interaction.reply({ content: "Not found", ephemeral: true });
+        if (interaction.isButton() && customId === "bad_words") {
+            return interaction.reply({ content: `🚷 عدد الكلمات المحظورة بالملف: **${config.badWords.length}** كلمة.`, ephemeral: true });
+        }
 
-                await target.kick();
+        // الإعدادات ⚙
+        if (interaction.isButton() && customId === "settings") {
+            const embed = new EmbedBuilder().setColor(config.embedColor).setTitle("⚙️ Bot Settings");
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("set_logs").setLabel("📜 Logs Name").setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId("set_image").setLabel("🖼 Image").setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId("set_color").setLabel("🎨 Color").setStyle(ButtonStyle.Success)
+            );
+            return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        }
 
-                if (logChannel) {
-                    logChannel.send(`👢 KICK <@${userId}> by <@${interaction.user.id}>`).catch(() => {});
-                }
+        if (interaction.isButton() && customId === "set_logs") {
+            return interaction.reply({ content: `📜 اسم روم السجلات المطلوبة في أي سيرفر: \`${config.logChannelName}\``, ephemeral: true });
+        }
 
-                return interaction.reply({ content: "Kicked", ephemeral: true });
-            }
+        if (interaction.isButton() && customId === "set_image") {
+            const embed = new EmbedBuilder().setTitle("🖼 صورة البوت").setColor(config.embedColor).setImage(config.image);
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
 
-            /* BAN */
-            if (interaction.customId === "ban_modal") {
+        if (interaction.isButton() && customId === "set_color") {
+            return interaction.reply({ content: `🎨 لون الـ Embed المعتمد: \`${config.embedColor || "غير محدد"}\``, ephemeral: true });
+        }
 
-                if (!target) return interaction.reply({ content: "Not found", ephemeral: true });
+        // المطور 👑
+        if (interaction.isButton() && customId === "developer") {
+            if (interaction.user.id !== config.ownerID) return interaction.reply({ content: "❌ هذا الزر للمطور فقط.", ephemeral: true });
+            const embed = new EmbedBuilder().setColor(config.embedColor).setTitle("👑 Developer Panel");
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("bot_info").setLabel("🤖 Bot Info").setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId("reload_bot").setLabel("🔄 Reload").setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId("shutdown_bot").setLabel("🛑 Shutdown").setStyle(ButtonStyle.Danger)
+            );
+            return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        }
 
-                await target.ban();
+        if (interaction.isButton() && customId === "bot_info") {
+            const embed = new EmbedBuilder().setColor(config.embedColor).setTitle("🤖 معلومات البوت")
+                .addFields(
+                    { name: "📡 Ping", value: `${client.ws.ping}ms`, inline: true },
+                    { name: "🌍 Servers", value: `${client.guilds.cache.size}`, inline: true },
+                    { name: "👥 Users", value: `${client.users.cache.size}`, inline: true }
+                );
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
 
-                if (logChannel) {
-                    logChannel.send(`🔨 BAN <@${userId}> by <@${interaction.user.id}>`).catch(() => {});
-                }
+        if (interaction.isButton() && customId === "reload_bot") {
+            await sendBotLog(interaction.guild, client, "🔄 تحديث البوت", `قام المطور **${interaction.user.tag}** بعمل ريلود للوحة.`, "#FFFF00");
+            return interaction.reply({ content: "✅ تم تحديث اللوحة بنجاح.", ephemeral: true });
+        }
 
-                return interaction.reply({ content: "Banned", ephemeral: true });
-            }
+        if (interaction.isButton() && customId === "shutdown_bot") {
+            await sendBotLog(interaction.guild, client, "🛑 إغلاق البوت", `قام المطور **${interaction.user.tag}** بإطفاء البوت.`, "#FF0000");
+            await interaction.reply({ content: "🛑 سيتم إيقاف البوت وفصل العمل...", ephemeral: true });
+            process.exit(0);
+        }
 
-            /* TIMEOUT */
-            if (interaction.customId === "timeout_modal") {
+        // أزرار المشرفين 👮
+        if (interaction.isButton() && customId === "moderation") {
+            const embed = new EmbedBuilder().setColor(config.embedColor).setTitle("👮 Moderation Control");
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("kick_user").setLabel("Kick").setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId("ban_user").setLabel("Ban").setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId("timeout_user").setLabel("Timeout").setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId("clear_chat").setLabel("Clear Chat").setStyle(ButtonStyle.Primary)
+            );
+            return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        }
 
-                if (!target) return interaction.reply({ content: "Not found", ephemeral: true });
-
-                await target.timeout(10 * 60 * 1000);
-
-                if (logChannel) {
-                    logChannel.send(`⏱ TIMEOUT <@${userId}> by <@${interaction.user.id}>`).catch(() => {});
-                }
-
-                return interaction.reply({ content: "Timeout done", ephemeral: true });
-            }
+        if (interaction.isButton() && ["kick_user", "ban_user", "timeout_user", "clear_chat"].includes(customId)) {
+            await sendBotLog(interaction.guild, client, "👮 ضغطة زر إشراف", `قام **${interaction.user.tag}** بالضغط على زر الإشراف: \`${customId}\`.`, "#Orange");
+            return interaction.reply({ content: `🛠️ تم استقبال كبسة زر الإشراف **(${customId})** وجاري معالجتها.`, ephemeral: true });
         }
     }
 };
