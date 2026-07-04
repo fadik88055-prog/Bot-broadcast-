@@ -95,13 +95,13 @@ client.on('interactionCreate', async interaction => {
         if (!isDeveloper && !interaction.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
             return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر لاستخدام اللوحة!', ephemeral: true });
         }
-        const embed = new EmbedBuilder().setTitle('🎛️ لوحة التحكم الإدارية المركزية - K3').setDescription('مرحباً بك في نظام الإدارة. يرجى اختيار القسم المطلوب.').setColor('#2b2d31').setTimestamp();
+        const embed = new EmbedBuilder().setTitle('🎛️ لوحة التحكم الإدارية المركزية - K3').setDescription('مرحباً بك في نظام الإدارة المركزية الكامل. يرجى اختيار القسم المطلوب للتحكم بالسيرفر.').setColor('#2b2d31').setTimestamp();
         await interaction.reply({ embeds: [embed], components: getMainPanelComponents(), ephemeral: true });
     }
 });
 
 // ========================================================
-// 🖱️ 6. معالجة كافة الأزرار بالكامل
+// 🖱️ 6. معالجة كافة الأزرار بالكامل (بدون قيود)
 // ========================================================
 client.on('interactionCreate', async interaction => {
     if (!interaction.isButton()) return;
@@ -114,7 +114,7 @@ client.on('interactionCreate', async interaction => {
             return await interaction.update({ embeds: [embed], components: getMainPanelComponents() });
         }
         if (interaction.customId === 'panel_close') {
-            return await interaction.update({ content: '❌ تم إغلاق اللوحة.', embeds: [], components: [] });
+            return await interaction.update({ content: '❌ تم إغلاق اللوحة الإدارية.', embeds: [], components: [] });
         }
 
         // ================== القوائم الفرعية ==================
@@ -124,7 +124,7 @@ client.on('interactionCreate', async interaction => {
                 new ButtonBuilder().setCustomId('bc_channel').setLabel('📢 رسالة للشات (Channel)').setStyle(ButtonStyle.Primary),
                 new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Danger)
             );
-            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('📢 قسم البرودكاست').setColor('#3498db')], components: [row] });
+            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('📢 قسم البرودكاست العام').setDescription('أرسل رسائل جماعية إلى غرف السيرفر أو إلى خاص الأعضاء مباشرة.').setColor('#3498db')], components: [row] });
         }
 
         if (interaction.customId === 'menu_moderation') {
@@ -135,7 +135,7 @@ client.on('interactionCreate', async interaction => {
                 new ButtonBuilder().setCustomId('mod_clear').setLabel('🗑 مسح الشات').setStyle(ButtonStyle.Primary)
             );
             const row2 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Danger));
-            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('👮 الإشراف والعقوبات').setColor('#e74c3c')], components: [row1, row2] });
+            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('👮 الإشراف والعقوبات الإدارية').setDescription('إدارة المخالفين وتنظيف غرف المحادثات بكبسة زر.').setColor('#e74c3c')], components: [row1, row2] });
         }
 
         if (interaction.customId === 'menu_protection') {
@@ -144,33 +144,33 @@ client.on('interactionCreate', async interaction => {
                 new ButtonBuilder().setCustomId('prot_words').setLabel(antiWordsEnabled ? '🟢 منع السب (شغال)' : '🔴 منع السب (مغلق)').setStyle(antiWordsEnabled ? ButtonStyle.Success : ButtonStyle.Danger),
                 new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Secondary)
             );
-            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('🛡️ نظام الحماية التلقائي').setColor('#2ecc71')], components: [row] });
+            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('🛡️ نظام الحماية التلقائي الرقمي').setDescription('قم بتشغيل أو إيقاف أنظمة الحماية الذكية لحفظ أمن السيرفر.').setColor('#2ecc71')], components: [row] });
         }
 
         if (interaction.customId === 'menu_settings') {
             const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Danger));
-            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('⚙️ الإعدادات العامة').setDescription('اللغة الحالية: العربية\nالبريفكس: Slash Commands').setColor('#95a5a6')], components: [row] });
+            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('⚙️ الإعدادات العامة').setDescription('اللغة الحالية للنظام: العربية 🇸🇦\nالبريفكس المعتمد: Slash Commands (/)').setColor('#95a5a6')], components: [row] });
         }
 
         if (interaction.customId === 'menu_stats') {
             const uptime = Math.floor((Date.now() - botStartTime) / 1000);
-            const embed = new EmbedBuilder().setTitle('📊 إحصائيات النظام').addFields(
-                { name: '📡 البنق (Ping)', value: `${client.ws.ping}ms`, inline: true },
-                { name: '⏳ مدة التشغيل', value: `${uptime} ثانية`, inline: true },
-                { name: '👥 عدد الأعضاء', value: `${interaction.guild.memberCount}`, inline: true }
+            const embed = new EmbedBuilder().setTitle('📊 إحصائيات النظام الفنية').addFields(
+                { name: '📡 البنق (Ping)', value: `\`${client.ws.ping}ms\``, inline: true },
+                { name: '⏳ مدة التشغيل', value: `\`${uptime} ثانية\``, inline: true },
+                { name: '👥 عدد الأعضاء الكلي', value: `\`${interaction.guild.memberCount}\``, inline: true }
             ).setColor('#2ecc71');
             const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Danger));
             return await interaction.update({ embeds: [embed], components: [row] });
         }
 
         if (interaction.customId === 'menu_developer') {
-            if (!isDeveloper) return await interaction.reply({ content: '⛔ خاص بالمطورين فقط!', ephemeral: true });
+            if (!isDeveloper) return await interaction.reply({ content: '⛔ هذا القسم مخصص للمطورين المعتمدين فقط!', ephemeral: true });
             const row1 = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('dev_restart').setLabel('♻ إعادة تشغيل البوت').setStyle(ButtonStyle.Danger),
                 new ButtonBuilder().setCustomId('dev_console_logs').setLabel('📜 سجلات النظام (Logs)').setStyle(ButtonStyle.Primary)
             );
             const row2 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Danger));
-            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('👑 تحكم المطورين').setColor('#f1c40f')], components: [row1, row2] });
+            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('👑 وحدة تحكم المطورين والمهندسين').setDescription('أدوات متقدمة للتحكم في برمجيات الخادم وقراءة السجلات.').setColor('#f1c40f')], components: [row1, row2] });
         }
 
         if (interaction.customId === 'menu_ticket') {
@@ -178,7 +178,7 @@ client.on('interactionCreate', async interaction => {
                 new ButtonBuilder().setCustomId('tkt_create').setLabel('🎫 فتح تذكرة دعم').setStyle(ButtonStyle.Success),
                 new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Danger)
             );
-            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('🎫 نظام التذاكر').setDescription('اضغط على الزر لفتح تذكرة دعم خاصة بك.').setColor('#1abc9c')], components: [row] });
+            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('🎫 نظام تذاكر الدعم الفني').setDescription('اضغط على الزر لإنشاء قناة مشفرة وخاصة للتحدث مع الإدارة مباشرة.').setColor('#1abc9c')], components: [row] });
         }
 
         if (interaction.customId === 'menu_utility') {
@@ -186,34 +186,34 @@ client.on('interactionCreate', async interaction => {
                 new ButtonBuilder().setCustomId('util_server').setLabel('📋 معلومات السيرفر').setStyle(ButtonStyle.Primary),
                 new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 رجوع').setStyle(ButtonStyle.Danger)
             );
-            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('🔧 المرافق العامة').setColor('#e67e22')], components: [row] });
+            return await interaction.update({ embeds: [new EmbedBuilder().setTitle('🔧 المرافق والبيانات العامة').setDescription('استخراج معلومات السيرفر والإحصائيات الهامة الحية.').setColor('#e67e22')], components: [row] });
         }
 
-        // ================== العمليات المباشرة (بدون نوافذ منبثقة) ==================
+        // ================== العمليات المباشرة ==================
         if (interaction.customId === 'mod_clear') {
             await interaction.deferReply({ ephemeral: true });
             await interaction.channel.bulkDelete(100, true).catch(() => {});
-            return await interaction.editReply('✅ **تم مسح آخر 100 رسالة من الشات بنجاح.**');
+            return await interaction.editReply('✅ **تم تنظيف الشات وحذف آخر 100 رسالة بنجاح تالٍ.**');
         }
 
         if (interaction.customId === 'dev_console_logs') {
-            const logsText = globalConsoleLogs.length > 0 ? globalConsoleLogs.join('\n') : 'لا توجد سجلات حالياً.';
+            const logsText = globalConsoleLogs.length > 0 ? globalConsoleLogs.join('\n') : 'لا توجد سجلات حالياً في الذاكرة المؤقتة.';
             return await interaction.reply({ content: `\`\`\`txt\n${logsText.substring(0, 1900)}\n\`\`\``, ephemeral: true });
         }
 
         if (interaction.customId === 'dev_restart') {
-            await interaction.reply({ content: '♻️ جاري إعادة التشغيل الآن...', ephemeral: true });
+            await interaction.reply({ content: '♻️ جاري إرسال إشارة إعادة التشغيل الكامل للنظام...', ephemeral: true });
             process.exit();
         }
 
         if (interaction.customId === 'prot_spam') {
             antiSpamEnabled = !antiSpamEnabled;
-            return await interaction.reply({ content: `🛡️ حماية السبام الآن: **${antiSpamEnabled ? 'شغالة 🟢' : 'مغلقة 🔴'}**`, ephemeral: true });
+            return await interaction.reply({ content: `🛡️ حماية السبام الآن: **${antiSpamEnabled ? 'نشطة ومتصلة 🟢' : 'معطلة بالكامل 🔴'}**`, ephemeral: true });
         }
 
         if (interaction.customId === 'prot_words') {
             antiWordsEnabled = !antiWordsEnabled;
-            return await interaction.reply({ content: `🚷 حماية الكلمات البذيئة الآن: **${antiWordsEnabled ? 'شغالة 🟢' : 'مغلقة 🔴'}**`, ephemeral: true });
+            return await interaction.reply({ content: `🚷 نظام منع الألفاظ البذيئة الآن: **${antiWordsEnabled ? 'شغال ونشط 🟢' : 'معطل 🔴'}**`, ephemeral: true });
         }
 
         if (interaction.customId === 'tkt_create') {
@@ -226,16 +226,16 @@ client.on('interactionCreate', async interaction => {
                     { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
                 ]
             });
-            await channel.send(`مرحباً <@${interaction.user.id}>، هذه تذكرتك الخاصة. كيف يمكننا مساعدتك؟`);
-            return await interaction.editReply(`✅ **تم فتح التذكرة بنجاح:** <#${channel.id}>`);
+            await channel.send(`مرحباً <@${interaction.user.id}>، لقد تم فتح تذكرتك بنجاح. يرجى كتابة مشكلتك هنا بانتظار الدعم الفني.`);
+            return await interaction.editReply(`✅ **تم إنشاء الغرفة الخاصة بنجاح:** <#${channel.id}>`);
         }
 
         if (interaction.customId === 'util_server') {
             const embed = new EmbedBuilder()
-                .setTitle(`معلومات سيرفر: ${interaction.guild.name}`)
+                .setTitle(`📋 بيانات خادم: ${interaction.guild.name}`)
                 .addFields(
-                    { name: '👑 الأونر', value: `<@${interaction.guild.ownerId}>`, inline: true },
-                    { name: '👥 الأعضاء', value: `${interaction.guild.memberCount}`, inline: true },
+                    { name: '👑 مالك السيرفر', value: `<@${interaction.guild.ownerId}>`, inline: true },
+                    { name: '👥 الأعضاء الحاليين', value: `\`${interaction.guild.memberCount}\``, inline: true },
                     { name: '📅 تاريخ الإنشاء', value: `<t:${Math.floor(interaction.guild.createdTimestamp / 1000)}:R>`, inline: true }
                 ).setColor('#3498db');
             return await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -243,35 +243,35 @@ client.on('interactionCreate', async interaction => {
 
         // ================== النوافذ المنبثقة (Modals) ==================
         if (interaction.customId === 'mod_ban') {
-            const modal = new ModalBuilder().setCustomId('modal_ban').setTitle('🔨 حظر عضو');
-            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_id').setLabel('أيدي العضو (ID)').setStyle(TextInputStyle.Short).setRequired(true)));
+            const modal = new ModalBuilder().setCustomId('modal_ban').setTitle('🔨 تطبيق حظر (Ban)');
+            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_id').setLabel('الرقم التعريفي للمستخدم (ID)').setStyle(TextInputStyle.Short).setRequired(true)));
             return await interaction.showModal(modal);
         }
 
         if (interaction.customId === 'mod_kick') {
-            const modal = new ModalBuilder().setCustomId('modal_kick').setTitle('団 طرد عضو');
-            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_id').setLabel('أيدي العضو (ID)').setStyle(TextInputStyle.Short).setRequired(true)));
+            const modal = new ModalBuilder().setCustomId('modal_kick').setTitle('団 تطبيق طرد (Kick)');
+            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_id').setLabel('الرقم التعريفي للمستخدم (ID)').setStyle(TextInputStyle.Short).setRequired(true)));
             return await interaction.showModal(modal);
         }
 
         if (interaction.customId === 'mod_warn') {
-            const modal = new ModalBuilder().setCustomId('modal_warn').setTitle('⚠️ تحذير عضو');
+            const modal = new ModalBuilder().setCustomId('modal_warn').setTitle('⚠️ تسجيل تحذير رسمي');
             modal.addComponents(
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_id').setLabel('أيدي العضو (ID)').setStyle(TextInputStyle.Short).setRequired(true)),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_reason').setLabel('سبب التحذير').setStyle(TextInputStyle.Paragraph).setRequired(true))
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_reason').setLabel('سبب العقوبة والتحذير').setStyle(TextInputStyle.Paragraph).setRequired(true))
             );
             return await interaction.showModal(modal);
         }
 
         if (interaction.customId === 'bc_channel') {
-            const modal = new ModalBuilder().setCustomId('modal_bc_channel').setTitle('📢 إرسال رسالة للشات');
-            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_msg').setLabel('الرسالة').setStyle(TextInputStyle.Paragraph).setRequired(true)));
+            const modal = new ModalBuilder().setCustomId('modal_bc_channel').setTitle('📢 بث رسالة في الشات الحالي');
+            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_msg').setLabel('محتوى الرسالة').setStyle(TextInputStyle.Paragraph).setRequired(true)));
             return await interaction.showModal(modal);
         }
 
         if (interaction.customId === 'bc_dm') {
-            const modal = new ModalBuilder().setCustomId('modal_bc_dm').setTitle('📨 إرسال رسالة للأعضاء');
-            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_msg').setLabel('الرسالة').setStyle(TextInputStyle.Paragraph).setRequired(true)));
+            const modal = new ModalBuilder().setCustomId('modal_bc_dm').setTitle('📨 برودكاست حقيقي لجميع الأعضاء');
+            modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_msg').setLabel('محتوى رسالة الخاص الخاصة بالأعضاء').setStyle(TextInputStyle.Paragraph).setRequired(true)));
             return await interaction.showModal(modal);
         }
 
@@ -281,7 +281,7 @@ client.on('interactionCreate', async interaction => {
 });
 
 // ========================================================
-// 📝 7. معالجة بيانات النوافذ المنبثقة بعد إرسالها (Modals Submit)
+// 📝 7. معالجة بيانات النوافذ المنبثقة وتنفيذها الفعلي الحقيقي
 // ========================================================
 client.on('interactionCreate', async interaction => {
     if (!interaction.isModalSubmit()) return;
@@ -292,61 +292,78 @@ client.on('interactionCreate', async interaction => {
         if (interaction.customId === 'modal_ban') {
             const userId = interaction.fields.getTextInputValue('input_id');
             await interaction.guild.members.ban(userId).catch(() => {});
-            return await interaction.editReply(`✅ تم إعطاء باند للعضو صاحب الأيدي: \`${userId}\``);
+            return await interaction.editReply(`🔨 **تم طرد وحظر العضو صاحب الأيدي بنجاح تام:** \`${userId}\``);
         }
 
         if (interaction.customId === 'modal_kick') {
             const userId = interaction.fields.getTextInputValue('input_id');
             await interaction.guild.members.kick(userId).catch(() => {});
-            return await interaction.editReply(`✅ تم طرد العضو صاحب الأيدي: \`${userId}\``);
+            return await interaction.editReply(`団 **تم طرد العضو صاحب الأيدي خارج السيرفر:** \`${userId}\``);
         }
 
         if (interaction.customId === 'modal_warn') {
             const userId = interaction.fields.getTextInputValue('input_id');
             const reason = interaction.fields.getTextInputValue('input_reason');
             const user = await client.users.fetch(userId).catch(()=>{});
-            if(user) await user.send(`⚠️ **لقد تلقيت تحذيراً من سيرفر ${interaction.guild.name}:**\nالسبب: ${reason}`).catch(()=>{});
-            return await interaction.editReply(`✅ تم إرسال التحذير للعضو بنجاح.`);
+            if(user) await user.send(`⚠️ **تنبيه إداري رسمي من سيرفر ${interaction.guild.name}:**\nالسبب المسجل: ${reason}`).catch(()=>{});
+            return await interaction.editReply(`✅ **تم إرسال إشعار التحذير والسبب لحساب العضو بنجاح.**`);
         }
 
         if (interaction.customId === 'modal_bc_channel') {
             const msg = interaction.fields.getTextInputValue('input_msg');
             await interaction.channel.send(msg);
-            return await interaction.editReply(`✅ تم إرسال الرسالة في الشات بنجاح.`);
+            return await interaction.editReply(`📢 **تم نشر البرودكاست داخل الشات الحالي.**`);
         }
 
+        // 🔥 نظام البرودكاست الشامل الحقيقي لجميع الأعضاء بدون استثناء
         if (interaction.customId === 'modal_bc_dm') {
             const msg = interaction.fields.getTextInputValue('input_msg');
-            // ملاحظة: إرسال DM للجميع قد يعرض البوت للحظر من ديسكورد بسبب الـ Rate Limit.
-            // هذا الكود يرسل لعضو واحد للتجربة (نفس العضو اللي طلب الأمر)، يمكن تطويره لاحقاً للكل.
-            await interaction.user.send(`[تجربة برودكاست]\n${msg}`).catch(()=>{});
-            return await interaction.editReply(`✅ تم إرسال البرودكاست (بوضع التجربة).`);
+            await interaction.editReply('⏳ **جاري بدء عملية البث الجماهيري وإرسال البرودكاست لجميع أعضاء السيرفر... قد يستغرق هذا بعض الوقت.**');
+            
+            try {
+                const members = await interaction.guild.members.fetch();
+                let successCount = 0;
+                let failedCount = 0;
+                
+                for (const [id, member] of members) {
+                    if (member.user.bot) continue; // تخطي البوتات
+                    try {
+                        await member.send(`${msg}`);
+                        successCount++;
+                    } catch (e) {
+                        failedCount++; // في حال حسابهم مغلق الخاص
+                    }
+                }
+                return await interaction.editReply(`✅ **اكتملت عملية البرودكاست الشاملة بنجاح!**\n📥 تم الإرسال بنجاح إلى: \`${successCount}\` عضو.\n❌ فشل الإرسال إلى: \`${failedCount}\` عضو (بسبب إغلاقهم للرسائل الخاصة).`);
+            } catch (error) {
+                return await interaction.editReply('❌ حدث خطأ فني أثناء محاولة سحب قائمة الأعضاء.');
+            }
         }
 
     } catch (err) {
-        console.error("خطأ في النوافذ:", err);
-        await interaction.editReply('❌ حدث خطأ أثناء تنفيذ الطلب. تأكد من صحة الأيدي (ID).').catch(()=>{});
+        console.error("خطأ في النوافذ ومستنداتها:", err);
+        await interaction.editReply('❌ فشلت العملية. يرجى التحقق من صحة المعرف (ID) والصلاحيات الممنوحة للبوت.').catch(()=>{});
     }
 });
 
 // ========================================================
-// 🛡️ 8. نظام الحماية (Anti-Spam & Bad Words) يعمل بالخلفية
+// 🛡️ 8. نظام الحماية الذكي في الخلفية (السبام والكلمات البذيئة)
 // ========================================================
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    // 1. نظام الكلمات البذيئة
+    // 1. معالجة الكلمات الممنوعة
     if (antiWordsEnabled) {
         const hasBadWord = bannedWords.some(word => message.content.includes(word));
         if (hasBadWord) {
             await message.delete().catch(() => {});
-            const warningMsg = await message.channel.send(`⚠️ يرجى احترام الشات يا <@${message.author.id}>، الكلمات البذيئة ممنوعة!`);
+            const warningMsg = await message.channel.send(`⚠️ يرجى الالتزام بالاحترام يا <@${message.author.id}>، الألفاظ البذيئة ممنوعة هنا!`);
             setTimeout(() => warningMsg.delete().catch(()=> {}), 5000);
-            return; // توقف هنا حتى لا يحسب سبام
+            return;
         }
     }
 
-    // 2. نظام منع السبام والتكرار السريع
+    // 2. معالجة التكرار والسبام السريع
     if (antiSpamEnabled) {
         const userMsgCount = userMessages.get(message.author.id) || 0;
         userMessages.set(message.author.id, userMsgCount + 1);
@@ -354,11 +371,11 @@ client.on('messageCreate', async message => {
         setTimeout(() => {
             const count = userMessages.get(message.author.id) || 0;
             if (count > 0) userMessages.set(message.author.id, count - 1);
-        }, 5000); // يمسح الرسائل المحسوبة بعد 5 ثواني
+        }, 5000);
 
-        if (userMsgCount >= 4) { // إذا أرسل أكثر من 4 رسائل في 5 ثواني
+        if (userMsgCount >= 4) {
             await message.delete().catch(() => {});
-            const warningMsg = await message.channel.send(`🚫 <@${message.author.id}> الرجاء التوقف عن السبام (التكرار السريع)!`);
+            const warningMsg = await message.channel.send(`🚫 التكرار السريع (السبام) ممنوع منعاً باتاً يا <@${message.author.id}>!`);
             setTimeout(() => warningMsg.delete().catch(()=> {}), 5000);
         }
     }
