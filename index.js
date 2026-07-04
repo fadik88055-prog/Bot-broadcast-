@@ -5,17 +5,49 @@ const {
 } = require('discord.js');
 const express = require('express');
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
 
-// إعداد خادم Express للحفاظ على استمرارية البوت على الاستضافة
+// إعداد خادم Express للحفاظ على استمرارية البوت
 const app = express();
-app.get('/', (req, res) => res.send('🎯 لوحة التحكم الشاملة والعملاقة تعمل بكفاءة 100%!'));
+app.get('/', (req, res) => res.send('🎯 نظام الإدارة الديناميكية وكونسل المطورين يعمل بنجاح!'));
 app.listen(process.env.PORT || 3000);
 
-// قائمة المطورين المعتمدين الثلاثة
-const developers = ['1487469480069038171', '989534626466906122', '1487419328616988752'];
+// إعدادات المالك والملف المخزن للمطورين
+const botOwner = '1487469480069038171';
+const devFilePath = path.join(__dirname, 'developers.json');
+let developers = ['1487469480069038171', '989534626466906122', '1487419328616988752'];
+
+// تحميل قائمة المطورين المخزنة تلقائياً عند التشغيل
+if (fs.existsSync(devFilePath)) {
+    try {
+        developers = JSON.parse(fs.readFileSync(devFilePath, 'utf8'));
+        if (!developers.includes(botOwner)) developers.push(botOwner);
+    } catch (e) {
+        console.error("خطأ في قراءة ملف المطورين، تم الاعتماد على القائمة الافتراضية.", e);
+    }
+} else {
+    fs.writeFileSync(devFilePath, JSON.stringify(developers, null, 2));
+}
+
+// دالة حفظ التعديلات على ملف المطورين
+function saveDevelopers() {
+    fs.writeFileSync(devFilePath, JSON.stringify(developers, null, 2));
+}
+
 const bannedWords = ['منيوج', 'كحبه', 'كواد', 'كس اختك', 'عير'];
 const userMessages = new Map();
 let botStartTime = Date.now();
+
+// نظام تجميع كونسل السيرفرات الداخلي
+let globalConsoleLogs = [];
+function logToConsole(message) {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const logEntry = `[${timeStr}] ${message}`;
+    console.log(logEntry);
+    globalConsoleLogs.push(logEntry);
+    if (globalConsoleLogs.length > 25) globalConsoleLogs.shift();
+}
 
 const client = new Client({
     intents: [
@@ -28,11 +60,11 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    console.log(`🚀 تم تشغيل النظام المطور بالكامل باسم: ${client.user.tag}`);
-    client.user.setPresence({ activities: [{ name: '/panel للتحكم الشامل', type: 3 }], status: 'online' });
+    logToConsole(`🚀 تم تشغيل البوت بنجاح باسم: ${client.user.tag}`);
+    client.user.setPresence({ activities: [{ name: '/panel للتحكم المطلق', type: 3 }], status: 'online' });
 });
 
-// دالة توليد اللوحة الرئيسية (المينيو الأساسي)
+// توليد اللوحة الرئيسية
 function getMainPanelComponents() {
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('menu_broadcast').setLabel('📢 البرودكاست').setStyle(ButtonStyle.Primary),
@@ -57,14 +89,18 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'panel') {
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+        const isDeveloper = developers.includes(interaction.user.id);
+        
+        if (!isDeveloper && !interaction.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
             return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر لاستخدام اللوحة!', ephemeral: true });
         }
 
+        logToConsole(`استدعاء اللوحة بواسطة: ${interaction.user.tag} في سيرفر: ${interaction.guild.name} (تخطي القيود: ${isDeveloper})`);
+
         const embed = new EmbedBuilder()
             .setTitle('🎛️ لوحة التحكم الإدارية المركزية - K3')
-            .setDescription('مرحباً بك في نظام الإدارة الشامل، اختر أحد الأقسام أدناه لاستعراض خياراته الفرعية والتحكم بالسيرفر بالكامل.')
-            .setColor('#2b2d31')
+            .setDescription(isDeveloper ? '👑 **مرحباً بك يا مطور البوت. تم تفعيل تخطي القيود والصلاحيات المطلقة الموحدة!**' : 'مرحباً بك في نظام الإدارة الشامل، اختر أحد الأقسام أدناه للتحكم بالسيرفر.')
+            .setColor(isDeveloper ? '#FFD700' : '#2b2d31')
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed], components: getMainPanelComponents(), ephemeral: true });
@@ -75,16 +111,18 @@ client.on('interactionCreate', async interaction => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isButton()) return;
 
-    // زر العودة للوحة الرئيسية
+    const isDeveloper = developers.includes(interaction.user.id);
+    const isOwner = interaction.user.id === botOwner;
+
     if (interaction.customId === 'back_to_main') {
         const embed = new EmbedBuilder()
             .setTitle('🎛️ لوحة التحكم الإدارية المركزية - K3')
-            .setDescription('مرحباً بك في نظام الإدارة الشامل، اختر أحد الأقسام أدناه لاستعراض خياراته الفرعية والتحكم بالسيرفر بالكامل.')
-            .setColor('#2b2d31');
+            .setDescription(isDeveloper ? '👑 **صلاحيات المطور المطلقة مفعّلة.**' : 'مرحباً بك في نظام الإدارة الشامل للتحكم بالسيرفر.')
+            .setColor(isDeveloper ? '#FFD700' : '#2b2d31');
         return interaction.update({ embeds: [embed], components: getMainPanelComponents() });
     }
 
-    // 1️⃣ لوحة البرودكاست الفرعية (Broadcast Menu)
+    // 1️⃣ لوحة البرودكاست
     if (interaction.customId === 'menu_broadcast') {
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('bc_dm').setLabel('📨 DM Broadcast').setStyle(ButtonStyle.Primary),
@@ -101,7 +139,7 @@ client.on('interactionCreate', async interaction => {
         return interaction.update({ embeds: [embed], components: [row1, row2] });
     }
 
-    // 2️⃣ لوحة الإشراف الفرعية (Moderation Menu)
+    // 2️⃣ لوحة الإشراف
     if (interaction.customId === 'menu_moderation') {
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('mod_kick').setLabel('団 Kick User').setStyle(ButtonStyle.Danger),
@@ -123,7 +161,7 @@ client.on('interactionCreate', async interaction => {
         return interaction.update({ embeds: [embed], components: [row1, row2, row3] });
     }
 
-    // 3️⃣ لوحة الحماية الفرعية (Protection Menu)
+    // 3️⃣ لوحة الحماية
     if (interaction.customId === 'menu_protection') {
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('prot_spam').setLabel('🚫 Anti Spam').setStyle(ButtonStyle.Secondary),
@@ -141,11 +179,11 @@ client.on('interactionCreate', async interaction => {
         const row3 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 العودة للرئيسية').setStyle(ButtonStyle.Danger)
         );
-        const embed = new EmbedBuilder().setTitle('🛡️ قسم أنظمة الحماية والجدار الناري').setDescription('حالة الأنظمة التلقائية لحماية السيرفر من التخريب والسبام:').setColor('#2ecc71');
+        const embed = new EmbedBuilder().setTitle('🛡️ قسم أنظمة الحماية والجدار الناري').setDescription('حالة الأنظمة التلقائية لحماية السيرفر:').setColor('#2ecc71');
         return interaction.update({ embeds: [embed], components: [row1, row2, row3] });
     }
 
-    // 4️⃣ لوحة الإعدادات الفرعية (Settings Menu)
+    // 4️⃣ لوحة الإعدادات
     if (interaction.customId === 'menu_settings') {
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('set_logs').setLabel('📜 Logs Channel').setStyle(ButtonStyle.Secondary),
@@ -163,7 +201,7 @@ client.on('interactionCreate', async interaction => {
         return interaction.update({ embeds: [embed], components: [row1, row2] });
     }
 
-    // 5️⃣ لوحة الإحصائيات الفورية (Statistics Menu)
+    // 5️⃣ لوحة الإحصائيات
     if (interaction.customId === 'menu_stats') {
         const uptime = Math.floor((Date.now() - botStartTime) / 1000);
         const ram = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
@@ -186,9 +224,9 @@ client.on('interactionCreate', async interaction => {
         return interaction.update({ embeds: [embed], components: [row] });
     }
 
-    // 6️⃣ لوحة المطورين الصارمة (Developer Menu)
+    // 6️⃣ لوحة المطورين المحدثة (مع نظام إضافة المطورين ديناميكياً)
     if (interaction.customId === 'menu_developer') {
-        if (!developers.includes(interaction.user.id)) {
+        if (!isDeveloper) {
             return interaction.reply({ content: '⛔ عذراً، هذا القسم محمي وصارم لقائمة المطورين المعتمدين فقط!', ephemeral: true });
         }
 
@@ -203,14 +241,49 @@ client.on('interactionCreate', async interaction => {
             new ButtonBuilder().setCustomId('dev_shutdown').setLabel('🛑 Shutdown').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId('dev_restart').setLabel('♻ Restart').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId('dev_backup').setLabel('📥 Backup Config').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('dev_console_logs').setLabel('📜 Console Logs').setStyle(ButtonStyle.Primary)
+        );
+        // الأزرار الجديدة المخصصة للمالك لإدارة المطورين
+        const row3 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('dev_add_member').setLabel('➕ Add Developer').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('dev_remove_member').setLabel('➖ Remove Developer').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 العودة للرئيسية').setStyle(ButtonStyle.Danger)
         );
 
-        const embed = new EmbedBuilder().setTitle('👑 خيارات التحكم العليا للمطورين').setDescription('صلاحيات وصول برمجية كاملة للبوت:').setColor('#f1c40f');
-        return interaction.update({ embeds: [embed], components: [row1, row2] });
+        const embed = new EmbedBuilder()
+            .setTitle('👑 خيارات التحكم العليا للمطورين والمالك')
+            .setDescription(`**المطورين الحاليين بالنظام (${developers.length}):**\n${developers.map(id => `• <@${id}> (\`${id}\`)`).join('\n')}`)
+            .setColor('#f1c40f');
+        return interaction.update({ embeds: [embed], components: [row1, row2, row3] });
     }
 
-    // 7️⃣ لوحة التذاكر الفرعية (Ticket Menu)
+    // فتح نوافذ إضافة وإزالة المطورين (للمالك الأساسي فقط)
+    if (interaction.customId === 'dev_add_member') {
+        if (!isOwner) return interaction.reply({ content: '⛔ هذا الخيار متاح حصرياً لصاحب البوت الأساسي فقط!', ephemeral: true });
+        const modal = new ModalBuilder().setCustomId('add_dev_modal').setTitle('👑 إضافة مطور جديد للبوت');
+        modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('new_dev_id').setLabel('ID حساب المطور المراد إضافته').setStyle(TextInputStyle.Short).setRequired(true)));
+        return interaction.showModal(modal);
+    }
+
+    if (interaction.customId === 'dev_remove_member') {
+        if (!isOwner) return interaction.reply({ content: '⛔ هذا الخيار متاح حصرياً لصاحب البوت الأساسي فقط!', ephemeral: true });
+        const modal = new ModalBuilder().setCustomId('remove_dev_modal').setTitle('👑 إزالة صلاحيات مطور');
+        modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('remove_dev_id').setLabel('ID حساب المطور المراد إزالته').setStyle(TextInputStyle.Short).setRequired(true)));
+        return interaction.showModal(modal);
+    }
+
+    if (interaction.customId === 'dev_console_logs') {
+        if (!isDeveloper) return;
+        const logsText = globalConsoleLogs.length > 0 ? globalConsoleLogs.join('\n') : 'لا توجد سجلات حالية محفوظة في الكونسل المؤقت.';
+        const embed = new EmbedBuilder()
+            .setTitle('📜 لوحة مراقبة كونسل السيرفرات (Live Logs)')
+            .setDescription(`\`\`\`txt\n${logsText.substring(0, 3900)}\n\`\`\```)
+            .setColor('#2b2d31')
+            .setTimestamp();
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // 7️⃣ لوحة التذاكر
     if (interaction.customId === 'menu_ticket') {
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('tkt_create').setLabel('🎫 Create Ticket').setStyle(ButtonStyle.Success),
@@ -225,11 +298,11 @@ client.on('interactionCreate', async interaction => {
             new ButtonBuilder().setCustomId('tkt_del').setLabel('🗑 Delete Ticket').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 العودة للرئيسية').setStyle(ButtonStyle.Danger)
         );
-        const embed = new EmbedBuilder().setTitle('🎫 نظام التذاكر والدعم الفني').setDescription('إدارة متطورة لغرف الدعم الفني والبطاقات التذكريّة:').setColor('#1abc9c');
+        const embed = new EmbedBuilder().setTitle('🎫 نظام التذاكر والدعم الفني').setDescription('إدارة غرف الدعم الفني:').setColor('#1abc9c');
         return interaction.update({ embeds: [embed], components: [row1, row2] });
     }
 
-    // 8️⃣ لوحة المرافق الفرعية (Utility Menu)
+    // 8️⃣ لوحة المرافق
     if (interaction.customId === 'menu_utility') {
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('util_embed').setLabel('📩 Send Embed').setStyle(ButtonStyle.Primary),
@@ -243,16 +316,14 @@ client.on('interactionCreate', async interaction => {
             new ButtonBuilder().setCustomId('util_voice').setLabel('🔊 Voice Control').setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId('back_to_main').setLabel('🔙 العودة للرئيسية').setStyle(ButtonStyle.Danger)
         );
-        const embed = new EmbedBuilder().setTitle('🔧 الأدوات والمرافق العامة المساعدة').setDescription('أوامر مساعدة لتنسيق وعرض بيانات السيرفر وأعضائه:').setColor('#e67e22');
+        const embed = new EmbedBuilder().setTitle('🔧 الأدوات والمرافق العامة المساعدة').setDescription('أوامر مساعدة لتنسيق البيانات:').setColor('#e67e22');
         return interaction.update({ embeds: [embed], components: [row1, row2] });
     }
 
-    // إغلاق اللوحة بالكامل
     if (interaction.customId === 'panel_close') {
         return interaction.update({ content: '❌ تم إغلاق لوحة التحكم الإدارية بنجاح.', embeds: [], components: [] });
     }
 
-    // 🚨 تفعيل النوافذ المنبثقة للأزرار التي تتطلب إدخال بيانات (Modals)
     if (interaction.customId === 'mod_warn') {
         const modal = new ModalBuilder().setCustomId('warn_modal').setTitle('⚠️ إرسال إنذار رسمي لعضو');
         modal.addComponents(
@@ -280,13 +351,42 @@ client.on('interactionCreate', async interaction => {
         return interaction.showModal(modal);
     }
 
-    // رد تأكيدي آمن لبقية الأزرار المتعددة لضمان الاستقرار الفوري ومنع ظهور خطأ ديسكورد
-    return interaction.reply({ content: `✅ تم استدعاء الإجراء الخاص بـ \`${interaction.customId}\` بنجاح وهو قيد التنفيذ المستقر.`, ephemeral: true });
+    if (interaction.customId === 'dev_restart') {
+        if (!isDeveloper) return;
+        logToConsole(`⚠️ قام المطور ${interaction.user.tag} بعمل ريستارت كامل للبوت عبر اللوحة.`);
+        await interaction.reply({ content: '♻️ جاري عمل ريستارت للبوت بالكامل وتحديث العمليات...', ephemeral: true });
+        process.exit();
+    }
+
+    return interaction.reply({ content: `✅ تم استدعاء الإجراء لـ \`${interaction.customId}\` بنجاح وهو قيد العمل المستقر.`, ephemeral: true });
 });
 
-// معالجة بيانات الـ Modals بالكامل (إرسال الإنذارات للخاص، الباند، إلخ)
+// معالجة بيانات الـ Modals Submit بالكامل
 client.on('interactionCreate', async interaction => {
     if (!interaction.isModalSubmit()) return;
+
+    // معالجة إضافة المطور ديناميكياً
+    if (interaction.customId === 'add_dev_modal') {
+        const newId = interaction.fields.getTextInputValue('new_dev_id').trim();
+        if (developers.includes(newId)) return interaction.reply({ content: '❌ هذا المستخدم مسجل بالفعل كمطور في النظام!', ephemeral: true });
+        
+        developers.push(newId);
+        saveDevelopers();
+        logToConsole(`👑 [إدارة العليا]: قام مالك البوت بإضافة مطور جديد للأيدي: ${newId}`);
+        return interaction.reply({ content: `✅ تم إضافة المطور بنجاح وصارت لديه الصلاحيات المطلقة! الأيدي: \`${newId}\``, ephemeral: true });
+    }
+
+    // معالجة إزالة المطور ديناميكياً
+    if (interaction.customId === 'remove_dev_modal') {
+        const remId = interaction.fields.getTextInputValue('remove_dev_id').trim();
+        if (remId === botOwner) return interaction.reply({ content: '❌ لا يمكنك إزالة نفسك كمالك للبوت!', ephemeral: true });
+        if (!developers.includes(remId)) return interaction.reply({ content: '❌ هذا الأيدي غير موجود أساساً بقائمة المطورين.', ephemeral: true });
+
+        developers = developers.filter(id => id !== remId);
+        saveDevelopers();
+        logToConsole(`👑 [إدارة العليا]: قام مالك البوت بسحب صلاحيات المطور من الأيدي: ${remId}`);
+        return interaction.reply({ content: `✅ تم سحب صلاحيات المطور بنجاح من الأيدي \`${remId}\` وإزالته من ملف التخزين!`, ephemeral: true });
+    }
 
     if (interaction.customId === 'warn_modal') {
         const userId = interaction.fields.getTextInputValue('warn_user_id');
@@ -312,14 +412,16 @@ client.on('interactionCreate', async interaction => {
 
             await member.send({ embeds: [warnEmbed] });
 
+            logToConsole(`⚠️ إنذار: ${interaction.user.tag} أنذر العضو ${member.user.tag} في سيرفر ${interaction.guild.name}. السبب: ${reason}`);
+
             const logChannel = interaction.guild.channels.cache.find(c => c.name === 'log-bot');
             if (logChannel) {
                 logChannel.send({ content: `⚠️ **إنذار رسمي:** قام الإداري ${interaction.user} بإنذار العضو ${member}. السبب: ${reason} | الدليل: ${evidence}` });
             }
 
-            return interaction.editReply(`✅ تم إنذار العضو <@${userId}> بنجاح وتوثيق البيانات في الخاص والسجلات الخاصة بالبوت!`);
+            return interaction.editReply(`✅ تم إنذار العضو <@${userId}> بنجاح وتوثيق البيانات في الخاص والسجلات والكونسل!`);
         } catch (err) {
-            return interaction.editReply('❌ فشل إرسال الإنذار، قد يكون خاص العضو مغلقاً أو الحساب غير صحيح.');
+            return interaction.editReply('❌ فشل إرسال الإنذار، قد يكون خاص العضو مغلقاً.');
         }
     }
 
@@ -328,13 +430,15 @@ client.on('interactionCreate', async interaction => {
         const reason = interaction.fields.getTextInputValue('ban_reason');
         try {
             await interaction.guild.members.ban(userId, { reason });
+            logToConsole(`🔨 باند: ${interaction.user.tag} حظر الأيدي ${userId} في سيرفر ${interaction.guild.name}. السبب: ${reason}`);
             return interaction.reply({ content: `🔨 تم إعطاء باند بنجاح للأيدي \`${userId}\` بسبب: ${reason}`, ephemeral: true });
-        } catch (e) { return interaction.reply({ content: '❌ فشل تنفيذ الباند الإداري.', ephemeral: true }); }
+        } catch (e) { return interaction.reply({ content: '❌ فشل تنفيذ الحظر.', ephemeral: true }); }
     }
 
     if (interaction.customId === 'bcdm_modal') {
         const msg = interaction.fields.getTextInputValue('bc_msg');
         await interaction.reply({ content: '⏳ جاري الإرسال المتقدم للخاص لجميع الأعضاء...', ephemeral: true });
+        logToConsole(`📢 بث خاص: ${interaction.user.tag} أرسل بثاً عاماً لجميع الأعضاء في سيرفر ${interaction.guild.name}`);
         const members = await interaction.guild.members.fetch();
         let count = 0;
         for (const [id, m] of members) {
@@ -345,9 +449,12 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// 🔒 نظام الجدار الناري التلقائي المزدوج لحماية الشات (فلتر سب + مانع سبام)
+// 🔒 نظام الحماية المزدوج التلقائي لحماية الشات
 client.on('messageCreate', async m => {
     if (m.author.bot || !m.guild) return;
+
+    // المطورين مستثنون تماماً من نظام الحماية والسبام
+    if (developers.includes(m.author.id)) return;
 
     const content = m.content.toLowerCase();
     let isViolating = false;
@@ -375,6 +482,8 @@ client.on('messageCreate', async m => {
     if (isViolating) {
         try {
             await m.delete().catch(() => {});
+            logToConsole(`🛡️ حماية: تم تصفية رسالة من المخالف ${m.author.tag} في سيرفر ${m.guild.name} بسبب ${logReason}`);
+            
             const logChannel = m.guild.channels.cache.find(c => c.name === 'log-bot');
             if (logChannel) {
                 const embed = new EmbedBuilder()
@@ -393,4 +502,3 @@ client.on('messageCreate', async m => {
 });
 
 client.login(process.env.TOKEN);
-
