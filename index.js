@@ -10,7 +10,7 @@ const path = require('path');
 
 // إعداد خادم Express للحفاظ على استمرارية البوت 24 ساعة
 const app = express();
-app.get('/', (req, res) => res.send('🎯 نظام التحكم المطلق الخالي من الأخطاء يعمل بنجاح!'));
+app.get('/', (req, res) => res.send('🎯 نظام حظر تعليق الأوامر يعمل بكفاءة قصوى!'));
 app.listen(process.env.PORT || 3000);
 
 // إعدادات المالك والملف المخزن للمطورين
@@ -58,7 +58,7 @@ const client = new Client({
     ]
 });
 
-// عند تشغيل البوت: يتم تسجيل أمر السلاش تلقائياً لحل مشكلة "The application did not respond"
+// عند تشغيل البوت: يتم تسجيل أمر السلاش تلقائياً
 client.once('ready', async () => {
     logToConsole(`🚀 تم تشغيل البوت بنجاح باسم: ${client.user.tag}`);
     client.user.setPresence({ activities: [{ name: '/panel للتحكم المطلق', type: 3 }], status: 'online' });
@@ -71,7 +71,7 @@ client.once('ready', async () => {
                 description: 'فتح لوحة التحكم الإدارية المركزية الشاملة لـ K3',
             }
         ]);
-        logToConsole('✅ تم المزامنة والتسجيل بنجاح! الأمر جاهز للاستخدام الآن بدون تعليق.');
+        logToConsole('✅ تم المزامنة والتسجيل بنجاح! الأمر جاهز ومحمي من التعليق.');
     } catch (error) {
         logToConsole(`❌ فشل تسجيل أمر السلاش تلقائياً: ${error.message}`);
     }
@@ -97,21 +97,23 @@ function getMainPanelComponents() {
     return [row1, row2, row3];
 }
 
-// استقبال أمر السلاش كوماند الرئيسي مع حماية Try..Catch
+// استقبال أمر السلاش كوماند الرئيسي مع كسر حاجز الـ 3 ثوانٍ فوراً
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'panel') {
         try {
-            // تأمين الحماية في حال تم طلب الأمر في الخاص (خارج السيرفرات)
+            // 🔒 تأجيل الاستجابة فوراً لمنع ظهور (The application did not respond) نهائياً
+            await interaction.deferReply({ ephemeral: true }).catch(() => {});
+
             if (!interaction.guild) {
-                return interaction.reply({ content: '❌ يجب تشغيل هذا الأمر داخل السيرفرات فقط!', ephemeral: true });
+                return interaction.editReply({ content: '❌ يجب تشغيل هذا الأمر داخل السيرفرات فقط!' });
             }
 
             const isDeveloper = developers.includes(interaction.user.id);
             
             if (!isDeveloper && !interaction.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-                return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر لاستخدام اللوحة!', ephemeral: true });
+                return interaction.editReply({ content: '❌ لا تملك صلاحية إدارة السيرفر لاستخدام اللوحة!' });
             }
 
             logToConsole(`استدعاء اللوحة بواسطة: ${interaction.user.tag} في سيرفر: ${interaction.guild.name} (تخطي القيود: ${isDeveloper})`);
@@ -122,18 +124,16 @@ client.on('interactionCreate', async interaction => {
                 .setColor(isDeveloper ? '#FFD700' : '#2b2d31')
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], components: getMainPanelComponents(), ephemeral: true });
+            // نستخدم هنا editReply لأننا قمنا بتأجيل الاستجابة في البداية
+            await interaction.editReply({ embeds: [embed], components: getMainPanelComponents() });
         } catch (error) {
             console.error(error);
             logToConsole(`❌ خطأ أثناء تنفيذ أمر panel: ${error.message}`);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ حدث خطأ داخلي غير متوقع، يرجى المحاولة مرة أخرى.', ephemeral: true }).catch(() => {});
-            }
         }
     }
 });
 
-// معالجة التنقل بين اللوحات الفرعية والأزرار مع حماية كاملة
+// معالجة التنقل بين اللوحات الفرعية والأزرار
 client.on('interactionCreate', async interaction => {
     if (!interaction.isButton()) return;
 
@@ -251,7 +251,7 @@ client.on('interactionCreate', async interaction => {
             return interaction.update({ embeds: [embed], components: [row] });
         }
 
-        // 6️⃣ لوحة المطورين المحدثة
+        // 6️⃣ لوحة المطورين
         if (interaction.customId === 'menu_developer') {
             if (!isDeveloper) {
                 return interaction.reply({ content: '⛔ عذراً، هذا القسم محمي وصارم لقائمة المطورين المعتمدين فقط!', ephemeral: true });
@@ -283,7 +283,7 @@ client.on('interactionCreate', async interaction => {
             return interaction.update({ embeds: [embed], components: [row1, row2, row3] });
         }
 
-        // فتح نوافذ إضافة وإزالة المطورين (للمالك الأساسي فقط)
+        // فتح نوافذ المطورين
         if (interaction.customId === 'dev_add_member') {
             if (!isOwner) return interaction.reply({ content: '⛔ هذا الخيار متاح حصرياً لصاحب البوت الأساسي فقط!', ephemeral: true });
             const modal = new ModalBuilder().setCustomId('add_dev_modal').setTitle('👑 إضافة مطور جديد للبوت');
@@ -389,7 +389,7 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// معالجة بيانات الـ Modals Submit بالكامل
+// معالجة بيانات الـ Modals Submit
 client.on('interactionCreate', async interaction => {
     if (!interaction.isModalSubmit()) return;
 
@@ -438,7 +438,7 @@ client.on('interactionCreate', async interaction => {
                     .setTimestamp();
 
                 await member.send({ embeds: [warnEmbed] });
-                logToConsole(`⚠️ إنذار: ${interaction.user.tag} أنذر العضو ${member.user.tag} في سيرفر ${interaction.guild.name}. Reason: ${reason}`);
+                logToConsole(`⚠️ إنذار: ${interaction.user.tag} أنذر العضو ${member.user.tag} في سيرفر ${interaction.guild.name}. السبب: ${reason}`);
 
                 const logChannel = interaction.guild.channels.cache.find(c => c.name === 'log-bot');
                 if (logChannel) {
@@ -454,7 +454,7 @@ client.on('interactionCreate', async interaction => {
             const userId = interaction.fields.getTextInputValue('ban_user_id');
             const reason = interaction.fields.getTextInputValue('ban_reason');
             await interaction.guild.members.ban(userId, { reason });
-            logToConsole(`🔨 باند: ${interaction.user.tag} حظر الأيدي ${userId} في سيرفر ${interaction.guild.name}. Reason: ${reason}`);
+            logToConsole(`🔨 باند: ${interaction.user.tag} حظر الأيدي ${userId} في سيرفر ${interaction.guild.name}. السبب: ${reason}`);
             return interaction.reply({ content: `🔨 تم إعطاء باند بنجاح للأيدي \`${userId}\` بسبب: ${reason}`, ephemeral: true });
         }
 
@@ -475,7 +475,7 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// 🔒 نظام الحماية التلقائي لحماية الشات
+// 🔒 نظام الحماية التلقائي للشات
 client.on('messageCreate', async m => {
     if (m.author.bot || !m.guild) return;
     if (developers.includes(m.author.id)) return;
