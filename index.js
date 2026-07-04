@@ -114,7 +114,6 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'panel') {
-        // طباعة فورا في شاشة الكونسل للتأكد من وصول الطلب للبوت
         console.log(`📥 [إشعار فوري]: تم استقبال أمر /panel من المستخدم ${interaction.user.tag}`);
 
         try {
@@ -268,10 +267,10 @@ client.on('interactionCreate', async interaction => {
             return interaction.update({ embeds: [embed], components: [row] }).catch(()=>{});
         }
 
-        // 6️⃣ لوحة المطورين
+        // 6️⃣ لوحة المطورين (تم هنا تصحيح السطر 323 بالكامل)
         if (interaction.customId === 'menu_developer') {
             if (!isDeveloper) {
-                return interaction.reply({ content: '⛔ عذراً، هذا القسم محمي وصارم لقائمة المطورين المعتمدين فقط!', ephemeral: true }).catch(()=>{});
+                return interaction.reply({ content: '⛔ عذراً، this section is restricted to authorized developers only!', ephemeral: true }).catch(()=>{});
             }
 
             const row1 = new ActionRowBuilder().addComponents(
@@ -320,7 +319,7 @@ client.on('interactionCreate', async interaction => {
             const logsText = globalConsoleLogs.length > 0 ? globalConsoleLogs.join('\n') : 'لا توجد سجلات حالية محفوظة في الكونسل المؤقت.';
             const embed = new EmbedBuilder()
                 .setTitle('📜 لوحة مراقبة كونسل السيرفرات (Live Logs)')
-                .setDescription(`\`\`\`txt\n${logsText.substring(0, 3900)}\n\`\`\```)
+                .setDescription(`\`\`\`txt\n${logsText.substring(0, 3900)}\n\`\`\``) // تم التصحيح هنا بعلامات باك تيك برمجية سليمة
                 .setColor('#2b2d31')
                 .setTimestamp();
             return interaction.reply({ embeds: [embed], ephemeral: true }).catch(()=>{});
@@ -440,7 +439,7 @@ client.on('interactionCreate', async interaction => {
 
             try {
                 const member = await interaction.guild.members.fetch(userId);
-                if (!member) return interaction.editReply('❌ لم يتم العثور على هذا العضو في السيرفر.').catch(()=>{});
+                if (!member) return interaction.editReply('❌ لم يتم العثور على هذا العضو في السيرفر.');
 
                 const warnEmbed = new EmbedBuilder()
                     .setTitle('⚠️ تم إرسال إنذار رسمي لك')
